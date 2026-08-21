@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PUT /cafe-owners/{owner_id}'
+method: PUT
+url: '{{baseUrl}}/cafe-owners/{{userId}}'
+order: 6000

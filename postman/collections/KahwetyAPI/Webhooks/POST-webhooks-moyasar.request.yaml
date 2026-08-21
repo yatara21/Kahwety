@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /webhooks/moyasar
+method: POST
+url: '{{baseUrl}}/webhooks/moyasar'
+order: 1000

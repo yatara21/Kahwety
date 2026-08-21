@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PUT /suggested-cafes/{cafe_id}'
+method: PUT
+url: '{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}'
+order: 9000

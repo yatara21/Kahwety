@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /admin/subscriptions/{subscription_id}'
+method: GET
+url: '{{baseUrl}}/admin/subscriptions/{{subscriptionId}}'
+order: 8000

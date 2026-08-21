@@ -1,0 +1,52 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE/editor artifacts
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build/distribution artifacts
+build/
+dist/
+*.egg-info/
+frontend/node_modules/
+frontend/dist/
+
+# Mypy/ruff caches
+.mypy_cache/
+.ruff_cache/
+
+# Google OAuth client secret
+client_secret*.json
+
+# Runtime/ops state (VPS)
+certbot/
+backups/
+*.sql.gz
+*.log
+
+# UI design mockups (reference only)
+resources/

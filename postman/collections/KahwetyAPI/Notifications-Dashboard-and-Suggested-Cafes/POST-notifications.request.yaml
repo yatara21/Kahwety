@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /notifications
+method: POST
+url: '{{baseUrl}}/notifications'
+order: 3000

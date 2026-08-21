@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /cafe-owners/{owner_id}'
+method: GET
+url: '{{baseUrl}}/cafe-owners/{{userId}}'
+order: 5000

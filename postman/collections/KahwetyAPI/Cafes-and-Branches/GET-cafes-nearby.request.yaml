@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /cafes/nearby
+method: GET
+url: '{{baseUrl}}/cafes/nearby'
+order: 3000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /complaints/{complaint_id}'
+method: GET
+url: '{{baseUrl}}/complaints/{{complaintId}}'
+order: 4000

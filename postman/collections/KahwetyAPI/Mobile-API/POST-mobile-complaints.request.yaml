@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /mobile/complaints
+method: POST
+url: '{{baseUrl}}/mobile/complaints'
+order: 8000

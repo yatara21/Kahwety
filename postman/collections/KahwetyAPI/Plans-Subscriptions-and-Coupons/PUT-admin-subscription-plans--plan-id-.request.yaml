@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PUT /admin/subscription-plans/{plan_id}'
+method: PUT
+url: '{{baseUrl}}/admin/subscription-plans/{{planId}}'
+order: 4000

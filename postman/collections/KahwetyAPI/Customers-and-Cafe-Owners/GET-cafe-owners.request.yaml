@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /cafe-owners
+method: GET
+url: '{{baseUrl}}/cafe-owners'
+order: 4000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'DELETE /branches/{branch_id}'
+method: DELETE
+url: '{{baseUrl}}/branches/{{branchId}}'
+order: 13000

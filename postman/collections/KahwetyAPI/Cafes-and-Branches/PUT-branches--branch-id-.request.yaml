@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PUT /branches/{branch_id}'
+method: PUT
+url: '{{baseUrl}}/branches/{{branchId}}'
+order: 12000

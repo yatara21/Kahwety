@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /offers/{offer_id}'
+method: GET
+url: '{{baseUrl}}/offers/{{offerId}}'
+order: 9000

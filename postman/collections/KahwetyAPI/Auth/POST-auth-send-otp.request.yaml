@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /auth/send-otp
+method: POST
+url: '{{baseUrl}}/auth/send-otp'
+order: 4000

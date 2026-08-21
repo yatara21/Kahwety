@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /mobile/cafes/{cafe_id}'
+method: GET
+url: '{{baseUrl}}/mobile/cafes/{{cafeId}}'
+order: 3000

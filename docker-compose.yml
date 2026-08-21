@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - data
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kahwety-backend:local
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    networks:
+      - data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kahwety-backend:local
+    env_file: .env
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - edge
+      - data
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: https://${API_DOMAIN:?API_DOMAIN must be set in .env}/api/v1
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
+    image: kahwety-frontend:local
+    expose:
+      - "8080"
+    restart: unless-stopped
+    networks:
+      - edge
+
+  nginx:
+    image: nginx:1.27-alpine
+    environment:
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?ADMIN_DOMAIN must be set in .env}
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN must be set in .env}
+      NGINX_ENVSUBST_FILTER: "$$ADMIN_DOMAIN $$API_DOMAIN"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - edge
+
+volumes:
+  postgres_data:
+
+networks:
+  edge:
+  data:
+    internal: true

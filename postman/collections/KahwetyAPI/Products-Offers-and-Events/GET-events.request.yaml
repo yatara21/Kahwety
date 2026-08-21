@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /events
+method: GET
+url: '{{baseUrl}}/events'
+order: 14000

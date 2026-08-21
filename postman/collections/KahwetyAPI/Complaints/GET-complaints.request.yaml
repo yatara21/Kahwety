@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /complaints
+method: GET
+url: '{{baseUrl}}/complaints'
+order: 3000

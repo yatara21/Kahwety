@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /suggested-cafes/{cafe_id}'
+method: GET
+url: '{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}'
+order: 7000

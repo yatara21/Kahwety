@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PUT /complaints/{complaint_id}'
+method: PUT
+url: '{{baseUrl}}/complaints/{{complaintId}}'
+order: 6000

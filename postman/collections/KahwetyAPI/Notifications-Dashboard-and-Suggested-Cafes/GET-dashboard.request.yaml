@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /dashboard
+method: GET
+url: '{{baseUrl}}/dashboard'
+order: 5000

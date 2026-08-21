@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /mobile/subscriptions/history
+method: GET
+url: '{{baseUrl}}/mobile/subscriptions/history'
+order: 12000

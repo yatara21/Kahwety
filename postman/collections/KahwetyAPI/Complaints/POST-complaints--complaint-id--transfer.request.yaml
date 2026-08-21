@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'POST /complaints/{complaint_id}/transfer'
+method: POST
+url: '{{baseUrl}}/complaints/{{complaintId}}/transfer'
+order: 8000

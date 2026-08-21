@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /branches/{branch_id}'
+method: GET
+url: '{{baseUrl}}/branches/{{branchId}}'
+order: 10000

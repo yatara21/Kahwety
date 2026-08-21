@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /auth/refresh
+method: POST
+url: '{{baseUrl}}/auth/refresh'
+order: 6000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PATCH /admin/subscription-plans/{plan_id}/activate'
+method: PATCH
+url: '{{baseUrl}}/admin/subscription-plans/{{planId}}/activate'
+order: 5000

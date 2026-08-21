@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /mobile/complaints
+method: GET
+url: '{{baseUrl}}/mobile/complaints'
+order: 7000

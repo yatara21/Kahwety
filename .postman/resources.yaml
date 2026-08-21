@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 919d2f4f-9c88-47f8-801b-9102435f64b4
+
+localResources:
+  collections:
+    - ../CafePlatform.postman_collection.json

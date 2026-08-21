@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'POST /complaints/{complaint_id}/cafe-reply'
+method: POST
+url: '{{baseUrl}}/complaints/{{complaintId}}/cafe-reply'
+order: 10000

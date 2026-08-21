@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'PUT /offers/{offer_id}'
+method: PUT
+url: '{{baseUrl}}/offers/{{offerId}}'
+order: 11000

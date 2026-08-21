@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /coupons/{coupon_id}'
+method: GET
+url: '{{baseUrl}}/coupons/{{couponId}}'
+order: 10000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /users
+method: POST
+url: '{{baseUrl}}/users'
+order: 3000

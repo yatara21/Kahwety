@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /mobile/plans
+method: GET
+url: '{{baseUrl}}/mobile/plans'
+order: 9000

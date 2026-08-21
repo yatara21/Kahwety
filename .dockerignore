@@ -1,0 +1,32 @@
+# VCS
+.git/
+.gitignore
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environments and secrets
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+client_secret*.json
+
+# Frontend build inputs that must be recreated in the image
+frontend/node_modules/
+frontend/dist/
+
+# Docs/dev-only files
+pages/
+cafe-platform-backend-prompt.md
+
+# IDE and OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

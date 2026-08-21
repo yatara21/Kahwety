@@ -1,0 +1,41 @@
+$kind: collection
+name: Kahwety API
+description: Current FastAPI routes for the Kahwety production API. Set apiOrigin and accessToken in your Postman environment before sending protected requests.
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{accessToken}}'
+variables:
+  - key: apiOrigin
+    value: 'http://localhost:8000'
+  - key: baseUrl
+    value: '{{apiOrigin}}/api/v1'
+  - key: accessToken
+    value: ''
+  - key: refreshToken
+    value: ''
+  - key: userId
+    value: ''
+  - key: cafeId
+    value: ''
+  - key: planId
+    value: ''
+  - key: branchId
+    value: ''
+  - key: productId
+    value: ''
+  - key: offerId
+    value: ''
+  - key: eventId
+    value: ''
+  - key: complaintId
+    value: ''
+  - key: subscriptionId
+    value: ''
+  - key: couponId
+    value: ''
+  - key: notificationId
+    value: ''
+  - key: suggestedCafeId
+    value: ''

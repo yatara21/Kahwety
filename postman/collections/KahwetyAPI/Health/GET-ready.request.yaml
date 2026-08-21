@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /ready
+method: GET
+url: '{{apiOrigin}}/ready'
+order: 2000

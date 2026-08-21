@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'POST /cafes/{cafe_id}/reject'
+method: POST
+url: '{{baseUrl}}/cafes/{{cafeId}}/reject'
+order: 8000

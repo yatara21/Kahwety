@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /mobile/subscriptions
+method: POST
+url: '{{baseUrl}}/mobile/subscriptions'
+order: 10000

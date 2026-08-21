@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /events/{event_id}'
+method: GET
+url: '{{baseUrl}}/events/{{eventId}}'
+order: 15000

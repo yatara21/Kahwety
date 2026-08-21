@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /auth/verify-otp
+method: POST
+url: '{{baseUrl}}/auth/verify-otp'
+order: 5000

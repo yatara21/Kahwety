@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'DELETE /events/{event_id}'
+method: DELETE
+url: '{{baseUrl}}/events/{{eventId}}'
+order: 18000

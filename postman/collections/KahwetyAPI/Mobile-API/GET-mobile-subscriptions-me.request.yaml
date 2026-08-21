@@ -1,0 +1,5 @@
+$kind: http-request
+name: GET /mobile/subscriptions/me
+method: GET
+url: '{{baseUrl}}/mobile/subscriptions/me'
+order: 11000

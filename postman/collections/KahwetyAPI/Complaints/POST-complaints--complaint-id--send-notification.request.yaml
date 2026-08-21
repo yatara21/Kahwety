@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'POST /complaints/{complaint_id}/send-notification'
+method: POST
+url: '{{baseUrl}}/complaints/{{complaintId}}/send-notification'
+order: 7000

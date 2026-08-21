@@ -1,0 +1,5 @@
+$kind: http-request
+name: 'GET /admins/{admin_id}'
+method: GET
+url: '{{baseUrl}}/admins/{{userId}}'
+order: 2000

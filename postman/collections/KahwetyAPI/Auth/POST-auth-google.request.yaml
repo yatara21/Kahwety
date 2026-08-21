@@ -1,0 +1,5 @@
+$kind: http-request
+name: POST /auth/google
+method: POST
+url: '{{baseUrl}}/auth/google'
+order: 3000

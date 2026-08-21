@@ -1,0 +1,212 @@
+{
+  "info": {
+    "name": "Kahwety API",
+    "description": "Current FastAPI routes for the Kahwety production API. Set apiOrigin and accessToken in your Postman environment before sending protected requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apiOrigin", "value": "https://api.example.com" },
+    { "key": "baseUrl", "value": "{{apiOrigin}}/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "cafeId", "value": "" },
+    { "key": "planId", "value": "" },
+    { "key": "branchId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "offerId", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "complaintId", "value": "" },
+    { "key": "subscriptionId", "value": "" },
+    { "key": "couponId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "suggestedCafeId", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        { "name": "GET /health", "request": { "method": "GET", "url": "{{apiOrigin}}/health" } },
+        { "name": "GET /ready", "request": { "method": "GET", "url": "{{apiOrigin}}/ready" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"full_name\": \"Example Customer\",\n  \"email\": \"customer@example.com\",\n  \"password\": \"Use-a-strong-test-password\",\n  \"role\": \"CUSTOMER\"\n}" },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Use-a-strong-test-password\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        { "name": "POST /auth/google", "request": { "method": "POST", "url": "{{baseUrl}}/auth/google" } },
+        { "name": "POST /auth/send-otp", "request": { "method": "POST", "url": "{{baseUrl}}/auth/send-otp" } },
+        { "name": "POST /auth/verify-otp", "request": { "method": "POST", "url": "{{baseUrl}}/auth/verify-otp" } },
+        { "name": "POST /auth/refresh", "request": { "method": "POST", "url": "{{baseUrl}}/auth/refresh" } },
+        { "name": "GET /auth/me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } },
+        { "name": "POST /auth/logout", "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" } }
+      ]
+    },
+    {
+      "name": "Admins",
+      "item": [
+        { "name": "GET /admins", "request": { "method": "GET", "url": "{{baseUrl}}/admins" } },
+        { "name": "GET /admins/{admin_id}", "request": { "method": "GET", "url": "{{baseUrl}}/admins/{{userId}}" } },
+        { "name": "POST /admins", "request": { "method": "POST", "url": "{{baseUrl}}/admins" } },
+        { "name": "PUT /admins/{admin_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/admins/{{userId}}" } },
+        { "name": "GET /admins/{admin_id}/permissions", "request": { "method": "GET", "url": "{{baseUrl}}/admins/{{userId}}/permissions" } },
+        { "name": "PUT /admins/{admin_id}/permissions", "request": { "method": "PUT", "url": "{{baseUrl}}/admins/{{userId}}/permissions" } }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "GET /users", "request": { "method": "GET", "url": "{{baseUrl}}/users" } },
+        { "name": "GET /users/{user_id}", "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}" } },
+        { "name": "POST /users", "request": { "method": "POST", "url": "{{baseUrl}}/users" } },
+        { "name": "PUT /users/{user_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/users/{{userId}}" } }
+      ]
+    },
+    {
+      "name": "Customers and Cafe Owners",
+      "item": [
+        { "name": "GET /customers", "request": { "method": "GET", "url": "{{baseUrl}}/customers" } },
+        { "name": "GET /customers/{customer_id}", "request": { "method": "GET", "url": "{{baseUrl}}/customers/{{userId}}" } },
+        { "name": "PUT /customers/{customer_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/customers/{{userId}}" } },
+        { "name": "GET /cafe-owners", "request": { "method": "GET", "url": "{{baseUrl}}/cafe-owners" } },
+        { "name": "GET /cafe-owners/{owner_id}", "request": { "method": "GET", "url": "{{baseUrl}}/cafe-owners/{{userId}}" } },
+        { "name": "PUT /cafe-owners/{owner_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/cafe-owners/{{userId}}" } }
+      ]
+    },
+    {
+      "name": "Cafes and Branches",
+      "item": [
+        { "name": "GET /cafes/public", "request": { "method": "GET", "url": "{{baseUrl}}/cafes/public" } },
+        { "name": "GET /cafes", "request": { "method": "GET", "url": "{{baseUrl}}/cafes" } },
+        { "name": "GET /cafes/nearby", "request": { "method": "GET", "url": "{{baseUrl}}/cafes/nearby" } },
+        { "name": "GET /cafes/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/cafes/{{cafeId}}" } },
+        { "name": "POST /cafes", "request": { "method": "POST", "url": "{{baseUrl}}/cafes" } },
+        { "name": "PUT /cafes/{cafe_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/cafes/{{cafeId}}" } },
+        { "name": "POST /cafes/{cafe_id}/approve", "request": { "method": "POST", "url": "{{baseUrl}}/cafes/{{cafeId}}/approve" } },
+        { "name": "POST /cafes/{cafe_id}/reject", "request": { "method": "POST", "url": "{{baseUrl}}/cafes/{{cafeId}}/reject" } },
+        { "name": "GET /branches/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/branches/cafe/{{cafeId}}" } },
+        { "name": "GET /branches/{branch_id}", "request": { "method": "GET", "url": "{{baseUrl}}/branches/{{branchId}}" } },
+        { "name": "POST /branches", "request": { "method": "POST", "url": "{{baseUrl}}/branches" } },
+        { "name": "PUT /branches/{branch_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/branches/{{branchId}}" } },
+        { "name": "DELETE /branches/{branch_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/branches/{{branchId}}" } }
+      ]
+    },
+    {
+      "name": "Products, Offers, and Events",
+      "item": [
+        { "name": "GET /products/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/products/cafe/{{cafeId}}" } },
+        { "name": "GET /products", "request": { "method": "GET", "url": "{{baseUrl}}/products" } },
+        { "name": "GET /products/{product_id}", "request": { "method": "GET", "url": "{{baseUrl}}/products/{{productId}}" } },
+        { "name": "POST /products", "request": { "method": "POST", "url": "{{baseUrl}}/products" } },
+        { "name": "PUT /products/{product_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/products/{{productId}}" } },
+        { "name": "DELETE /products/{product_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/products/{{productId}}" } },
+        { "name": "GET /offers/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/offers/cafe/{{cafeId}}" } },
+        { "name": "GET /offers", "request": { "method": "GET", "url": "{{baseUrl}}/offers" } },
+        { "name": "GET /offers/{offer_id}", "request": { "method": "GET", "url": "{{baseUrl}}/offers/{{offerId}}" } },
+        { "name": "POST /offers", "request": { "method": "POST", "url": "{{baseUrl}}/offers" } },
+        { "name": "PUT /offers/{offer_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/offers/{{offerId}}" } },
+        { "name": "DELETE /offers/{offer_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/offers/{{offerId}}" } },
+        { "name": "GET /events/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/events/cafe/{{cafeId}}" } },
+        { "name": "GET /events", "request": { "method": "GET", "url": "{{baseUrl}}/events" } },
+        { "name": "GET /events/{event_id}", "request": { "method": "GET", "url": "{{baseUrl}}/events/{{eventId}}" } },
+        { "name": "POST /events", "request": { "method": "POST", "url": "{{baseUrl}}/events" } },
+        { "name": "PUT /events/{event_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/events/{{eventId}}" } },
+        { "name": "DELETE /events/{event_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/events/{{eventId}}" } }
+      ]
+    },
+    {
+      "name": "Complaints",
+      "item": [
+        { "name": "GET /complaints/customer/{customer_id}", "request": { "method": "GET", "url": "{{baseUrl}}/complaints/customer/{{userId}}" } },
+        { "name": "GET /complaints/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/complaints/cafe/{{cafeId}}" } },
+        { "name": "GET /complaints", "request": { "method": "GET", "url": "{{baseUrl}}/complaints" } },
+        { "name": "GET /complaints/{complaint_id}", "request": { "method": "GET", "url": "{{baseUrl}}/complaints/{{complaintId}}" } },
+        { "name": "POST /complaints", "request": { "method": "POST", "url": "{{baseUrl}}/complaints" } },
+        { "name": "PUT /complaints/{complaint_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/complaints/{{complaintId}}" } },
+        { "name": "POST /complaints/{complaint_id}/send-notification", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/send-notification" } },
+        { "name": "POST /complaints/{complaint_id}/transfer", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/transfer" } },
+        { "name": "POST /complaints/{complaint_id}/resolve", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/resolve" } },
+        { "name": "POST /complaints/{complaint_id}/cafe-reply", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/cafe-reply" } }
+      ]
+    },
+    {
+      "name": "Plans, Subscriptions, and Coupons",
+      "item": [
+        { "name": "GET /admin/subscription-plans", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscription-plans" } },
+        { "name": "GET /admin/subscription-plans/{plan_id}", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}" } },
+        { "name": "POST /admin/subscription-plans", "request": { "method": "POST", "url": "{{baseUrl}}/admin/subscription-plans" } },
+        { "name": "PUT /admin/subscription-plans/{plan_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}" } },
+        { "name": "PATCH /admin/subscription-plans/{plan_id}/activate", "request": { "method": "PATCH", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}/activate" } },
+        { "name": "PATCH /admin/subscription-plans/{plan_id}/deactivate", "request": { "method": "PATCH", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}/deactivate" } },
+        { "name": "GET /admin/subscriptions", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscriptions" } },
+        { "name": "GET /admin/subscriptions/{subscription_id}", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscriptions/{{subscriptionId}}" } },
+        { "name": "GET /coupons", "request": { "method": "GET", "url": "{{baseUrl}}/coupons" } },
+        { "name": "GET /coupons/{coupon_id}", "request": { "method": "GET", "url": "{{baseUrl}}/coupons/{{couponId}}" } },
+        { "name": "POST /coupons", "request": { "method": "POST", "url": "{{baseUrl}}/coupons" } },
+        { "name": "PUT /coupons/{coupon_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/coupons/{{couponId}}" } },
+        { "name": "DELETE /coupons/{coupon_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/coupons/{{couponId}}" } }
+      ]
+    },
+    {
+      "name": "Notifications, Dashboard, and Suggested Cafes",
+      "item": [
+        { "name": "GET /notifications", "request": { "method": "GET", "url": "{{baseUrl}}/notifications" } },
+        { "name": "GET /notifications/{notification_id}", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/{{notificationId}}" } },
+        { "name": "POST /notifications", "request": { "method": "POST", "url": "{{baseUrl}}/notifications" } },
+        { "name": "DELETE /notifications/{notification_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/notifications/{{notificationId}}" } },
+        { "name": "GET /dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/dashboard" } },
+        { "name": "GET /suggested-cafes", "request": { "method": "GET", "url": "{{baseUrl}}/suggested-cafes" } },
+        { "name": "GET /suggested-cafes/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}" } },
+        { "name": "POST /suggested-cafes", "request": { "method": "POST", "url": "{{baseUrl}}/suggested-cafes" } },
+        { "name": "PUT /suggested-cafes/{cafe_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}" } },
+        { "name": "POST /suggested-cafes/{cafe_id}/approve", "request": { "method": "POST", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/approve" } },
+        { "name": "POST /suggested-cafes/{cafe_id}/reject", "request": { "method": "POST", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/reject" } },
+        { "name": "DELETE /suggested-cafes/{cafe_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}" } }
+      ]
+    },
+    {
+      "name": "Mobile API",
+      "item": [
+        { "name": "GET /mobile/cafes", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes" } },
+        { "name": "GET /mobile/cafes/nearby", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/nearby" } },
+        { "name": "GET /mobile/cafes/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}" } },
+        { "name": "GET /mobile/cafes/{cafe_id}/products", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/products" } },
+        { "name": "GET /mobile/cafes/{cafe_id}/offers", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/offers" } },
+        { "name": "GET /mobile/cafes/{cafe_id}/events", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/events" } },
+        { "name": "GET /mobile/complaints", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/complaints" } },
+        { "name": "POST /mobile/complaints", "request": { "method": "POST", "url": "{{baseUrl}}/mobile/complaints" } },
+        { "name": "GET /mobile/plans", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/plans" } },
+        { "name": "POST /mobile/subscriptions", "request": { "method": "POST", "url": "{{baseUrl}}/mobile/subscriptions" } },
+        { "name": "GET /mobile/subscriptions/me", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/subscriptions/me" } },
+        { "name": "GET /mobile/subscriptions/history", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/subscriptions/history" } }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        { "name": "POST /webhooks/moyasar", "request": { "method": "POST", "url": "{{baseUrl}}/webhooks/moyasar" } }
+      ]
+    }
+  ]
+}
