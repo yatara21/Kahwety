@@ -1,5 +1,0 @@
-$kind: http-request
-name: POST /offers
-method: POST
-url: '{{baseUrl}}/offers'
-order: 10000

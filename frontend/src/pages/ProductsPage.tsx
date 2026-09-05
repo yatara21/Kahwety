@@ -1,10 +1,19 @@
-import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Search, Pencil, Trash2, Upload } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  Pencil,
+  Trash2,
+  Upload,
+  Plus,
+  Loader2,
+  LoaderCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,57 +32,72 @@ import {
   useDeleteProduct,
 } from "@/hooks/useProducts";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { uploadApi } from "@/api/upload";
+import { getImageUrl } from "@/utils/imageUrl";
 
 const productSchema = z.object({
   name: z.string().min(1, "اسم المنتج بالعربية مطلوب"),
   name_en: z.string().optional().default(""),
-  image: z.any().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
 
 export default function ProductsPage() {
-  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const pageSize = 10;
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useProducts({
     page,
     page_size: pageSize,
-    search: search || undefined,
   });
 
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ProductFormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: "", name_en: "", image: null },
+    defaultValues: { name: "", name_en: "" },
   });
 
   const items = data?.items ?? [];
   const totalPages = data?.total_pages ?? 1;
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingImage(true);
+    try {
+      const response = await uploadApi.upload(file);
+      setImageUrl(response.url);
+    } catch (error) {
+      console.error("Upload failed", error);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingProduct(null);
-    setImagePreview(null);
-    reset({ name: "", name_en: "", image: null });
+    setImageUrl("");
+    reset({ name: "", name_en: "" });
     setDialogOpen(true);
   };
 
   const openEditDialog = (product: any) => {
     setEditingProduct(product);
-    setImagePreview(product.image_url || product.image || null);
+    setImageUrl(product.image_url || "");
     reset({
       name: product.name,
       name_en: product.name_en || "",
-      image: null,
     });
     setDialogOpen(true);
   };
@@ -81,7 +105,7 @@ export default function ProductsPage() {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setEditingProduct(null);
-    setImagePreview(null);
+    setImageUrl("");
     reset();
   };
 
@@ -92,15 +116,22 @@ export default function ProductsPage() {
       price: editingProduct?.price || 1,
       cafe_id: editingProduct?.cafe_id || "",
       availability: editingProduct?.availability ?? true,
+      image_url: imageUrl,
     };
 
     if (editingProduct) {
       updateMutation.mutate({ id: editingProduct.id, data: payload }, {
-        onSuccess: () => handleDialogClose(),
+        onSuccess: () => {
+          handleDialogClose();
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        },
       });
     } else {
       createMutation.mutate(payload, {
-        onSuccess: () => handleDialogClose(),
+        onSuccess: () => {
+          handleDialogClose();
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        },
       });
     }
   };
@@ -118,67 +149,78 @@ export default function ProductsPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-6 pb-12 font-sans" dir="rtl" style={{ fontFamily: "Almarai, sans-serif" }}>
+      {/* Top Header: Title + Add Product Button matching Products.png */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-[#2f2d29]">المنتجات والخدمات</h2>
-        <Button onClick={openCreateDialog} className="bg-[#c8a44e] hover:bg-[#b8943e] text-white">
-          منتج جديد +
-        </Button>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2F2D29]">المنتجات والخدمات</h1>
+        <button
+          onClick={openCreateDialog}
+          className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95"
+        >
+          + منتج جديد
+        </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#e8dcc8]/50 overflow-hidden">
+      {/* Table matching Products.png from Figma */}
+      <div className="bg-white rounded-2xl border border-[#EAE6DF] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-right border-collapse">
             <thead>
-              <tr className="border-b border-[#e8dcc8]/50 bg-[#f9f6ef]/50">
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">#</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">اسم المنتج باللغة العربية</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">اسم المنتج باللغة الإنجليزية</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">الصورة</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">حذف</th>
+              <tr className="border-b border-[#F0ECE4] text-[#8A7A5C] text-sm font-semibold">
+                <th className="py-4 px-6 w-16 text-center">#</th>
+                <th className="py-4 px-6 text-center">اسم المنتج باللغة العربية</th>
+                <th className="py-4 px-6 text-center">اسم المنتج باللغة الانجليزية</th>
+                <th className="py-4 px-6 text-center">الصورة</th>
+                <th className="py-4 px-6 text-center">حذف</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#F0ECE4]">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-[#e8dcc8]/30">
-                    <td className="px-4 py-3"><div className="h-4 w-8 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-32 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-28 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-16 bg-gray-100 rounded animate-pulse" /></td>
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-6 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-32 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-28 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-24 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-8 w-16 bg-gray-100 rounded-lg mx-auto" /></td>
                   </tr>
                 ))
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-[#8a7a5c]">
-                    لا توجد منتجات
+                  <td colSpan={5} className="py-16 text-center text-[#8A7A5C] font-semibold text-sm">
+                    لا توجد منتجات مسجلة حالياً
                   </td>
                 </tr>
               ) : (
                 items.map((product, index) => (
-                  <tr key={product.id} className="border-b border-[#e8dcc8]/30 hover:bg-[#f9f6ef]/30">
-                    <td className="px-4 py-3 text-sm text-[#2f2d29]">
+                  <tr key={product.id} className="hover:bg-[#FAF8F5]/80 transition-colors">
+                    <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">
                       {(page - 1) * pageSize + index + 1}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#2f2d29]">{product.name}</td>
-                    <td className="px-4 py-3 text-sm text-[#2f2d29]">{product.name_en || "—"}</td>
-                    <td className="px-4 py-3 text-sm text-[#c8a44e]">
-                      {product.image_url || product.image || "Espresso.png"}
+                    <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">
+                      {product.name || "إسبريسو"}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    <td className="py-4 px-6 text-center text-sm font-semibold text-[#2F2D29]">
+                      {product.name_en || "Espresso"}
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <span className="text-xs font-bold text-[#007AFF] hover:underline cursor-pointer">
+                        {product.image_url || "Espresso.png"}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => openEditDialog(product)}
-                          className="p-1.5 rounded-lg text-[#8a7a5c] hover:bg-[#f0e8d0] transition-colors"
+                          className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-[#BA9B65] text-[#8A7A5C] hover:text-[#BA9B65] flex items-center justify-center transition-colors shadow-xs"
                         >
-                          <Pencil size={16} />
+                          <Pencil size={15} />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(product)}
-                          className="p-1.5 rounded-lg text-[#8a7a5c] hover:bg-red-50 hover:text-red-600 transition-colors"
+                          className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-red-500 text-[#8A7A5C] hover:text-red-600 flex items-center justify-center transition-colors shadow-xs"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -189,78 +231,134 @@ export default function ProductsPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#e8dcc8]/50">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-[#8a7a5c]">الصفحة/{pageSize}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1.5 rounded-lg border border-[#e0d5b8] text-sm disabled:opacity-50 hover:bg-[#f9f6ef]"
+        {/* Pagination matching Figma */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#F0ECE4] text-xs font-bold text-[#2F2D29]">
+          <div className="flex items-center gap-2">
+            <span className="text-[#8A7A5C]">الصفحة/</span>
+            <div className="relative">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="appearance-none bg-white border border-[#E5E0D8] rounded-lg px-3 py-1.5 pr-6 text-xs font-bold text-[#2F2D29] focus:outline-none cursor-pointer"
               >
-                &gt;
-              </button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((num) => (
-                <button
-                  key={num}
-                  onClick={() => setPage(num)}
-                  className={`px-3 py-1.5 rounded-lg text-sm ${
-                    page === num ? "bg-[#c8a44e] text-white" : "border border-[#e0d5b8] hover:bg-[#f9f6ef]"
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={page <= 1}
-                className="px-3 py-1.5 rounded-lg border border-[#e0d5b8] text-sm disabled:opacity-50 hover:bg-[#f9f6ef]"
-              >
-                &lt;
-              </button>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+              <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#8A7A5C] pointer-events-none" />
             </div>
           </div>
-        )}
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+            >
+              <ChevronRight size={14} />
+            </button>
+
+            {Array.from({ length: Math.min(totalPages, 4) }, (_, i) => {
+              const pageNum = i + 1;
+              const isSelected = page === pageNum;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${
+                    isSelected
+                      ? "border border-[#BA9B65] text-[#BA9B65] bg-white shadow-xs"
+                      : "border border-[#E5E0D8] text-[#2F2D29] hover:bg-[#FAF8F5]"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* Add / Edit Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md bg-white text-[#2F2D29] rounded-3xl p-6 border border-[#EAE6DF] shadow-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-[#2f2d29]">
+            <DialogTitle className="text-2xl font-extrabold text-[#2F2D29] text-right mb-4">
               {editingProduct ? "تعديل المنتج" : "منتج جديد"}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">اسم المنتج باللغة العربية</Label>
-              <Input {...register("name")} placeholder="اسم المنتج" className="border-[#e0d5b8]" />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">اسم المنتج باللغة العربية</Label>
+              <Input {...register("name")} placeholder="إسبريسو" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29] placeholder:text-[#8A7A5C]/70" required />
+              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">اسم المنتج باللغة الإنجليزية</Label>
-              <Input {...register("name_en")} placeholder="Product name" className="border-[#e0d5b8]" dir="ltr" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">اسم المنتج باللغه الانجليزية</Label>
+              <Input {...register("name_en")} placeholder="Espresso" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29] placeholder:text-[#8A7A5C]/70" dir="ltr" />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">صورة المنتج</Label>
-              <div className="border-2 border-dashed border-[#e0d5b8] rounded-xl p-4 text-center hover:border-[#c8a44e] transition-colors cursor-pointer">
-                <Upload className="h-6 w-6 mx-auto text-[#8a7a5c] mb-1" />
-                <p className="text-sm text-[#8a7a5c]">اسحب صورة هنا أو انقر للتحميل</p>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">صورة المنتج</Label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileUpload}
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-[#E5E0D8] rounded-2xl p-4 text-center hover:border-[#BA9B65] transition-colors cursor-pointer bg-white"
+              >
+                {imageUrl ? (
+                  <div className="space-y-2">
+                    <img src={getImageUrl(imageUrl)} alt="Preview" className="h-20 w-auto rounded-lg mx-auto object-cover" />
+                    <p className="text-xs text-[#8A7A5C] font-bold">اضغط لتغيير الصورة</p>
+                  </div>
+                ) : uploadingImage ? (
+                  <div className="flex items-center justify-center gap-2 py-4">
+                    <LoaderCircle className="animate-spin text-[#BA9B65]" size={20} />
+                    <span className="text-xs font-bold text-[#8A7A5C]">جاري رفع الصورة...</span>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-6 w-6 mx-auto text-[#BA9B65] mb-2" />
+                    <p className="text-xs font-bold text-[#8A7A5C]">اضغط هنا لرفع الصورة</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={handleDialogClose} className="border-[#e0d5b8]">
-                إلغاء
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#c8a44e] hover:bg-[#b8943e] text-white">
+            <div className="flex items-center gap-3 pt-4">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 h-11 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold rounded-xl shadow-xs"
+              >
                 {isSubmitting ? "جاري الحفظ..." : "حفظ"}
               </Button>
-            </DialogFooter>
+              <Button
+                type="button"
+                onClick={handleDialogClose}
+                className="flex-1 h-11 bg-[#BA9B65]/15 hover:bg-[#BA9B65] text-[#7A5C28] hover:text-white border border-[#BA9B65] font-bold rounded-xl transition-all shadow-xs"
+              >
+                إلغاء
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

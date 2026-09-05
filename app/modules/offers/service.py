@@ -4,6 +4,7 @@ from app.modules.offers.repository import OfferRepository
 from app.modules.offers.schemas import OfferCreate, OfferUpdate
 from app.modules.offers.models import Offer
 from app.core.exceptions import NotFoundException, ValidationException
+from app.common.enums import OfferStatus
 
 
 class OfferService:
@@ -37,9 +38,11 @@ class OfferService:
         self,
         status: Optional[str] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        search: Optional[str] = None,
+        cafe_id: Optional[str] = None,
     ) -> tuple[List[Offer], int]:
-        return await self.offer_repository.list_all(status, page, page_size)
+        return await self.offer_repository.list_all(status, page, page_size, search=search, cafe_id=cafe_id)
     
     async def update_offer(self, offer_id: str, offer_update: OfferUpdate) -> Offer:
         offer = await self.get_offer(offer_id)
@@ -54,3 +57,12 @@ class OfferService:
     async def delete_offer(self, offer_id: str) -> None:
         offer = await self.get_offer(offer_id)
         await self.offer_repository.delete(offer)
+
+    async def list_all_active_offers(
+        self,
+        page: int = 1,
+        page_size: int = 20
+    ) -> tuple[List[Offer], int]:
+        """Convenience method for the mobile public feed — only ACTIVE offers."""
+        return await self.offer_repository.list_all(OfferStatus.ACTIVE, page, page_size)
+

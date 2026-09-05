@@ -57,10 +57,12 @@ class UserService:
     async def list_all_users(
         self,
         status: Optional[str] = None,
+        role: Optional[str] = None,
         search: Optional[str] = None,
         page: int = 1,
         page_size: int = 20
     ) -> tuple[List[User], int]:
-        from app.common.enums import UserStatus
+        from app.common.enums import UserRole, UserStatus
         status_enum = UserStatus(status) if status else None
-        return await self.repository.list_all(status_enum, search, page, page_size)
+        role_enum = UserRole(role) if role else None
+        return await self.repository.list_all(status_enum, search, page, page_size, role=role_enum)

@@ -16,12 +16,14 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def list_users(
     pagination: PaginationParams = Depends(),
     status: Optional[str] = None,
+    role: Optional[str] = None,
     current_user = Depends(get_current_admin),
     session: AsyncSession = Depends(get_async_session)
 ):
     service = UserService(session)
     users, total = await service.list_all_users(
         status=status,
+        role=role,
         search=pagination.search,
         page=pagination.page,
         page_size=pagination.page_size

@@ -11,16 +11,21 @@ class AdminResponse(BaseModel):
     phone: Optional[str] = None
     role: UserRole
     status: UserStatus
+    pages: Optional[List[str]] = None
+    profile_image: Optional[str] = None
+    last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
 
 class AdminCreate(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
     phone: Optional[str] = Field(None, max_length=20)
     role: UserRole = Field(default=UserRole.ADMIN)
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=6)
+    pages: Optional[List[PagePermission]] = None
 
 
 class AdminUpdate(BaseModel):
@@ -29,6 +34,12 @@ class AdminUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
+    password: Optional[str] = Field(None, min_length=6)
+    pages: Optional[List[PagePermission]] = None
+
+
+class AdminStatusUpdate(BaseModel):
+    status: UserStatus
 
 
 class PagePermissionResponse(BaseModel):
@@ -38,5 +49,15 @@ class PagePermissionResponse(BaseModel):
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
 class AssignPagePermissionsRequest(BaseModel):
     pages: List[PagePermission]
+
+
+class PermissionOption(BaseModel):
+    key: str
+    label: str
+
+
+class AvailablePermissionsResponse(BaseModel):
+    permissions: List[str]

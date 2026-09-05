@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from typing import Optional, List
 from app.modules.events.models import Event
 from app.modules.events.schemas import EventCreate, EventUpdate
@@ -15,6 +15,7 @@ class EventRepository:
             title=event_create.title,
             description=event_create.description,
             location=event_create.location,
+            image_url=event_create.image_url,
             event_date=event_create.event_date,
             status=event_create.status
         )
@@ -58,12 +59,26 @@ class EventRepository:
         self,
         status: Optional[str] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        search: Optional[str] = None,
+        cafe_id: Optional[str] = None,
     ) -> tuple[List[Event], int]:
         query = select(Event)
-        
+
+        if cafe_id:
+            query = query.where(Event.cafe_id == cafe_id)
+
         if status:
             query = query.where(Event.status == status)
+
+        if search:
+            query = query.where(
+                or_(
+                    Event.title.ilike(f"%{search}%"),
+                    Event.description.ilike(f"%{search}%"),
+                    Event.location.ilike(f"%{search}%"),
+                )
+            )
         
         # Get total count
         from sqlalchemy import func
@@ -87,6 +102,8 @@ class EventRepository:
             event.description = event_update.description
         if event_update.location is not None:
             event.location = event_update.location
+        if event_update.image_url is not None:
+            event.image_url = event_update.image_url
         if event_update.event_date is not None:
             event.event_date = event_update.event_date
         if event_update.status is not None:

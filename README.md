@@ -58,65 +58,50 @@ nginx/templates/            Host/domain-aware reverse-proxy configuration
 tests/                      Automated backend tests (pytest)
 scripts/                    Opt-in diagnostic, smoke-test, and seed scripts
 resources/                  UI design mockups (PNG/PDF) — reference only
-postman/, .postman/         Postman workspace files
-CafePlatform.postman_collection.json   Importable Postman collection
-docker-compose.yml          Production Compose stack (TLS-first)
-docker-compose.dev.yml      Local development Compose stack (API + DB only)
+CafePlatform.postman_collection.json   Importable Postman collection (14 categories, 130 requests)
+docker-compose.yml          Unified Docker Compose stack (Full-stack: DB + Migrations + API + Admin)
 ```
 
 ## Run the API with Docker Compose
 
-### Local development stack
+### One-Command Full Stack Deployment
 
-`docker-compose.dev.yml` starts only PostgreSQL, migrations, and the API — no Nginx, domains, or TLS certificates are required. The API is published on `http://localhost:8000` and PostgreSQL on `127.0.0.1:5432`.
+The unified `docker-compose.yml` runs the entire system with one command: PostgreSQL 15, automatic Alembic database migrations, the FastAPI backend on port 8000, and the React admin dashboard on port 3000.
 
-1. Create your environment file from the template:
+1. Create your environment file from the template (optional, sensible defaults provided):
 
    ```bash
    cp .env.example .env        # Windows PowerShell: copy .env.example .env
    ```
 
-2. Edit `.env` for local use:
-
-   ```env
-   ENVIRONMENT=development
-   DEBUG=true
-   POSTGRES_USER=kahwety
-   POSTGRES_PASSWORD=local-dev-password
-   POSTGRES_DB=kahwety
-   DATABASE_URL=postgresql+asyncpg://kahwety:local-dev-password@postgres:5432/kahwety
-   SECRET_KEY=any-64-char-random-string-for-local-testing
-   ```
-
-   Leave the `TWILIO_*`, `GOOGLE_*`, and `MOYASAR_*` values empty for local development. Without Twilio credentials the app falls back to a log-based SMS provider (the dev OTP code is `123456`, printed in the API logs).
-
-3. Start the stack:
+2. Start the full stack:
 
    ```bash
-   docker compose -f docker-compose.dev.yml up -d --build
-   docker compose -f docker-compose.dev.yml ps
-   docker compose -f docker-compose.dev.yml logs -f backend
+   docker compose up -d --build
+   docker compose ps
+   docker compose logs -f backend
    ```
 
-4. Seed the super admin (first run only):
+3. Seed the super admin (first run only):
 
    ```bash
-   docker compose -f docker-compose.dev.yml exec backend python scripts/seed_super_admin.py
+   docker compose exec backend python scripts/seed_super_admin.py
    ```
 
-5. Verify:
+4. Verify services:
 
    ```bash
    curl http://localhost:8000/health    # {"status":"ok"}
    curl http://localhost:8000/ready     # {"status":"ready"}
    ```
 
-   Interactive docs are available at `http://localhost:8000/docs`.
+   - **Backend API & Swagger**: `http://localhost:8000/docs`
+   - **Frontend Admin Dashboard**: `http://localhost:3000`
 
-6. Stop the stack (database data survives in the `postgres_data_dev` volume):
+5. Stop the stack (database and uploaded files survive in persistent volumes):
 
    ```bash
-   docker compose -f docker-compose.dev.yml down
+   docker compose down
    ```
 
 ### Production stack
@@ -546,7 +531,7 @@ curl http://localhost:8000/api/v1/mobile/cafes/<cafe_id>/products
 **OTP flow testing.** With Twilio configured, `POST /api/v1/auth/send-otp` delivers a real SMS and `POST /api/v1/auth/verify-otp` checks it. Without Twilio credentials (non-production), the log-based provider is used: the OTP is always `123456` and is printed in the backend logs:
 
 ```bash
-docker compose -f docker-compose.dev.yml logs backend | grep "DEV SMS"
+docker compose logs backend | grep "DEV SMS"
 ```
 
 **Webhook testing.** Send a signed request with the configured webhook secret:
@@ -564,7 +549,6 @@ Additional opt-in scripts (run with the backend environment active):
 - `scripts/e2e_subscription_smoke.py` — end-to-end subscription flow
 - `scripts/test_moyasar_live.py` — Moyasar live integration test
 - `scripts/live_smoke_suite.ps1` / `.sh` — live smoke suite against a running deployment
-- `scripts/check_db_state.py`, `scripts/db_check.py`, `scripts/debug_500.py` — diagnostics
 
 ### Automated tests
 
@@ -580,11 +564,10 @@ Coverage includes auth (login, tokens, OTP, Google), permissions per role, API c
 cd frontend && npm run build
 ```
 
-Validate the Compose files without starting anything:
+Validate the Compose file without starting anything:
 
 ```bash
 docker compose --env-file .env.example config --quiet
-docker compose -f docker-compose.dev.yml --env-file .env.example config --quiet
 ```
 
 ## Database and migrations

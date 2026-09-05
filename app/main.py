@@ -188,6 +188,8 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.suggested_cafes.router import router as suggested_cafes_router
 from app.modules.mobile.router import router as mobile_router
+from app.modules.uploads.router import router as uploads_router
+from app.modules.map.router import router as map_router
 
 # Ensure model metadata is registered for migrations/tests
 from app.modules.payments import models as _payments_models  # noqa: F401
@@ -195,11 +197,22 @@ from app.modules.subscriptions import models as _subscriptions_models  # noqa: F
 from app.modules.subscription_plans import models as _subscription_plans_models  # noqa: F401
 
 
+# Ensure static uploads directory exists
+import os
+os.makedirs("static/uploads", exist_ok=True)
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(customers_router, prefix="/api/v1")
 app.include_router(cafe_owners_router, prefix="/api/v1")
 app.include_router(admins_router, prefix="/api/v1")
+# Map router must be registered before cafes/mobile routers so its static
+# paths (/cafes/map, /mobile/cafes/map) are not shadowed by /cafes/{cafe_id}.
+app.include_router(map_router, prefix="/api/v1")
+app.include_router(map_router, prefix="/api/v1/mobile")
 app.include_router(cafes_router, prefix="/api/v1")
 app.include_router(branches_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
@@ -214,6 +227,8 @@ app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(suggested_cafes_router, prefix="/api/v1")
 app.include_router(mobile_router, prefix="/api/v1")
+app.include_router(uploads_router, prefix="/api/v1")
+app.include_router(uploads_router, prefix="/api/v1/admin")
 
 
 if __name__ == "__main__":

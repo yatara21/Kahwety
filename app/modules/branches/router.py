@@ -73,16 +73,22 @@ async def update_branch(
     current_user = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session)
 ):
+    from app.core.exceptions import ForbiddenException
+    from app.core.permissions import has_page_permission
+    from app.common.enums import PagePermission
+
+    is_admin = await has_page_permission(session, current_user, PagePermission.CAFES)
     service = BranchService(session)
     branch = await service.get_branch(branch_id)
     
-    if current_user.role == UserRole.CAFE_OWNER:
+    if current_user.role == UserRole.CAFE_OWNER and not is_admin:
         from app.modules.cafes.service import CafeService
         cafe_service = CafeService(session)
         cafe = await cafe_service.get_cafe(branch.cafe_id)
         if cafe.owner_id != current_user.id:
-            from app.core.exceptions import ForbiddenException
             raise ForbiddenException("You can only update branches of your own cafes")
+    elif not is_admin and current_user.role != UserRole.CAFE_OWNER:
+        raise ForbiddenException("Insufficient permissions to update branch")
     
     updated_branch = await service.update_branch(branch_id, branch_update)
     return SuccessResponse(data=BranchResponse.model_validate(updated_branch))
@@ -94,16 +100,22 @@ async def delete_branch(
     current_user = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session)
 ):
+    from app.core.exceptions import ForbiddenException
+    from app.core.permissions import has_page_permission
+    from app.common.enums import PagePermission
+
+    is_admin = await has_page_permission(session, current_user, PagePermission.CAFES)
     service = BranchService(session)
     branch = await service.get_branch(branch_id)
     
-    if current_user.role == UserRole.CAFE_OWNER:
+    if current_user.role == UserRole.CAFE_OWNER and not is_admin:
         from app.modules.cafes.service import CafeService
         cafe_service = CafeService(session)
         cafe = await cafe_service.get_cafe(branch.cafe_id)
         if cafe.owner_id != current_user.id:
-            from app.core.exceptions import ForbiddenException
             raise ForbiddenException("You can only delete branches of your own cafes")
+    elif not is_admin and current_user.role != UserRole.CAFE_OWNER:
+        raise ForbiddenException("Insufficient permissions to delete branch")
     
     await service.delete_branch(branch_id)
     return SuccessResponse(data={"message": "Branch deleted successfully"})

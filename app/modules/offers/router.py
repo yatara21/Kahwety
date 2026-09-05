@@ -40,6 +40,7 @@ async def list_offers_by_cafe(
 async def list_all_offers(
     pagination: PaginationParams = Depends(),
     status: Optional[str] = None,
+    cafe_id: Optional[str] = None,
     current_user = Depends(require_page_permission(PagePermission.OFFERS)),
     session: AsyncSession = Depends(get_async_session)
 ):
@@ -47,7 +48,9 @@ async def list_all_offers(
     offers, total = await service.list_all_offers(
         status=status,
         page=pagination.page,
-        page_size=pagination.page_size
+        page_size=pagination.page_size,
+        search=pagination.search,
+        cafe_id=cafe_id
     )
     paginated = PaginatedResponse.create(
         items=[OfferResponse.model_validate(o) for o in offers],
@@ -74,13 +77,17 @@ async def create_offer(
     current_user = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session)
 ):
-    if current_user.role != UserRole.CAFE_OWNER:
-        from app.core.exceptions import ForbiddenException
-        raise ForbiddenException("Only cafe owners can create offers")
+    from app.core.permissions import has_page_permission
+    from app.core.exceptions import ForbiddenException
+
+    is_admin = await has_page_permission(session, current_user, PagePermission.OFFERS)
+    if current_user.role != UserRole.CAFE_OWNER and not is_admin:
+        raise ForbiddenException("Only cafe owners or authorized admins can create offers")
     
-    from app.modules.cafes.service import CafeService
-    cafe_service = CafeService(session)
-    await cafe_service.ensure_owner_owns_cafe(offer_create.cafe_id, current_user.id)
+    if current_user.role == UserRole.CAFE_OWNER and not is_admin:
+        from app.modules.cafes.service import CafeService
+        cafe_service = CafeService(session)
+        await cafe_service.ensure_owner_owns_cafe(offer_create.cafe_id, current_user.id)
 
     service = OfferService(session)
     offer = await service.create_offer(offer_create)
@@ -94,16 +101,21 @@ async def update_offer(
     current_user = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session)
 ):
+    from app.core.permissions import has_page_permission
+    from app.core.exceptions import ForbiddenException
+
+    is_admin = await has_page_permission(session, current_user, PagePermission.OFFERS)
     service = OfferService(session)
     offer = await service.get_offer(offer_id)
     
-    if current_user.role == UserRole.CAFE_OWNER:
+    if current_user.role == UserRole.CAFE_OWNER and not is_admin:
         from app.modules.cafes.service import CafeService
         cafe_service = CafeService(session)
         cafe = await cafe_service.get_cafe(offer.cafe_id)
         if cafe.owner_id != current_user.id:
-            from app.core.exceptions import ForbiddenException
             raise ForbiddenException("You can only update offers of your own cafes")
+    elif not is_admin and current_user.role != UserRole.CAFE_OWNER:
+        raise ForbiddenException("Insufficient permissions to update offer")
     
     updated_offer = await service.update_offer(offer_id, offer_update)
     return SuccessResponse(data=OfferResponse.model_validate(updated_offer))
@@ -115,16 +127,21 @@ async def delete_offer(
     current_user = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session)
 ):
+    from app.core.permissions import has_page_permission
+    from app.core.exceptions import ForbiddenException
+
+    is_admin = await has_page_permission(session, current_user, PagePermission.OFFERS)
     service = OfferService(session)
     offer = await service.get_offer(offer_id)
     
-    if current_user.role == UserRole.CAFE_OWNER:
+    if current_user.role == UserRole.CAFE_OWNER and not is_admin:
         from app.modules.cafes.service import CafeService
         cafe_service = CafeService(session)
         cafe = await cafe_service.get_cafe(offer.cafe_id)
         if cafe.owner_id != current_user.id:
-            from app.core.exceptions import ForbiddenException
             raise ForbiddenException("You can only delete offers of your own cafes")
+    elif not is_admin and current_user.role != UserRole.CAFE_OWNER:
+        raise ForbiddenException("Insufficient permissions to delete offer")
     
     await service.delete_offer(offer_id)
     return SuccessResponse(data={"message": "Offer deleted successfully"})

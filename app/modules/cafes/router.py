@@ -86,8 +86,8 @@ async def get_cafe(
     session: AsyncSession = Depends(get_async_session)
 ):
     service = CafeService(session)
-    cafe = await service.get_cafe(cafe_id)
-    return SuccessResponse(data=CafeResponse.model_validate(cafe))
+    cafe = await service.get_cafe_detail(cafe_id)
+    return SuccessResponse(data=cafe)
 
 
 @router.post("", response_model=SuccessResponse[CafeResponse])

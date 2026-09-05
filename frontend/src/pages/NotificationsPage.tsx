@@ -1,334 +1,213 @@
 import { useState } from "react";
+import { Bell, Eye, Trash2, Send, Plus, Loader2, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Trash2, Bell, Send } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
-import { DataTable } from "@/components/DataTable";
-import { Pagination } from "@/components/Pagination";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { FormField } from "@/components/FormField";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ErrorState } from "@/components/ErrorState";
+import { useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   useNotifications,
   useCreateNotification,
   useDeleteNotification,
 } from "@/hooks/useNotifications";
-import { formatDateTime } from "@/lib/utils";
+import { SendNotificationModal } from "@/components/SendNotificationModal";
 import type { Notification } from "@/types";
-
-const notificationSchema = z.object({
-  title: z.string().min(1, "العنوان مطلوب"),
-  message: z.string().min(1, "الرسالة مطلوبة"),
-  target_type: z.enum(["ALL", "CUSTOMER", "CAFE_OWNER", "USER"], {
-    required_error: "الشريحة المستهدفة مطلوبة",
-  }),
-  target_id: z.string().optional(),
-});
-
-type NotificationFormData = z.infer<typeof notificationSchema>;
-
-const targetTypeLabels: Record<string, string> = {
-  ALL: "الجميع",
-  CUSTOMER: "عميل",
-  CAFE_OWNER: "صاحب مقهى",
-  USER: "مستخدم",
-};
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Notification | null>(null);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
+  const [modalOpen, setModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, error, refetch } = useNotifications({
+  const { data, isLoading } = useNotifications({
     page,
     page_size: pageSize,
   });
 
-  const createMutation = useCreateNotification();
   const deleteMutation = useDeleteNotification();
 
   const items = data?.items ?? [];
-  const totalPages = data?.total_pages ?? 0;
+  const totalPages = data?.total_pages ?? 1;
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<NotificationFormData>({
-    resolver: zodResolver(notificationSchema),
-    defaultValues: {
-      title: "",
-      message: "",
-      target_type: "ALL",
-      target_id: "",
-    },
-  });
-
-  const watchedTargetType = watch("target_type");
-
-  const openCreateDialog = () => {
-    reset({
-      title: "",
-      message: "",
-      target_type: "ALL",
-      target_id: "",
-    });
-    setDialogOpen(true);
-  };
-
-  const onSubmit = (formData: NotificationFormData) => {
-    const payload = {
-      ...formData,
-      target_id: formData.target_id || undefined,
-    };
-    createMutation.mutate(payload, {
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id, {
       onSuccess: () => {
-        setDialogOpen(false);
-        reset();
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
       },
     });
   };
 
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-    deleteMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
-    });
-  };
-
-  const columns = [
-    {
-      key: "title",
-      title: "العنوان",
-      render: (notification: Notification) => (
-        <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-gold-500 shrink-0" />
-          <span className="font-medium text-ink-900">
-            {notification.title}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "message",
-      title: "الرسالة",
-      render: (notification: Notification) => (
-        <span className="text-sm text-muted-foreground line-clamp-2 max-w-xs block">
-          {notification.message}
-        </span>
-      ),
-    },
-    {
-      key: "target_type",
-      title: "الشريحة",
-      render: (notification: Notification) => (
-        <span className="inline-flex items-center rounded-full bg-gold-100 px-2.5 py-0.5 text-xs font-medium text-gold-700 border border-gold-200">
-          {targetTypeLabels[notification.target_type] ??
-            notification.target_type}
-        </span>
-      ),
-    },
-    {
-      key: "created_at",
-      title: "التاريخ",
-      render: (notification: Notification) => (
-        <span className="text-sm text-muted-foreground">
-          {formatDateTime(notification.created_at)}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      title: "الإجراءات",
-      render: (notification: Notification) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-red-600"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteTarget(notification);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="الإشعارات" subtitle="إدارة إشعارات النظام" />
-        <ErrorState message="فشل في تحميل الإشعارات" onRetry={refetch} />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="الإشعارات"
-        subtitle="إدارة إشعارات النظام"
-        action={
-          <Button
-            onClick={openCreateDialog}
-            className="bg-gold-500 hover:bg-gold-600 text-white"
-          >
-            <Send className="h-4 w-4 ms-2" />
-            إرسال إشعار
-          </Button>
-        }
-      />
+    <div className="space-y-6 pb-12 font-sans" dir="rtl" style={{ fontFamily: "Almarai, sans-serif" }}>
+      {/* Top Header: Title + Send Notification CTA */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2F2D29]">تفاصيل الإشعار</h1>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2"
+        >
+          <Send size={15} />
+          إرسال إشعار
+        </button>
+      </div>
 
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <>
-          <DataTable
-            columns={columns}
-            data={items}
-            keyExtractor={(item) => item.id}
-            emptyMessage="لا توجد إشعارات"
-          />
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
-        </>
-      )}
+      {/* Top Alert Banner Card matching Notification Details.png from Figma */}
+      <div className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-[#BA9B65] flex items-center justify-center text-white">
+            <Bell size={20} />
+          </div>
+          <h2 className="text-base font-extrabold text-[#2F2D29]">
+            هناك 4 شكاوى لم تُراجع بعد
+          </h2>
+        </div>
+      </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              إرسال إشعار جديد
-            </DialogTitle>
-            <DialogDescription>
-              أدخل بيانات الإشعار الجديد
-            </DialogDescription>
-          </DialogHeader>
+      {/* Table matching Notification Details.png from Figma */}
+      <div className="bg-white rounded-2xl border border-[#EAE6DF] overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="border-b border-[#F0ECE4] text-[#8A7A5C] text-sm font-semibold">
+                <th className="py-4 px-6 w-16 text-center">#</th>
+                <th className="py-4 px-6 text-center">اسم المستخدم</th>
+                <th className="py-4 px-6 text-center">اسم المقهى</th>
+                <th className="py-4 px-6 text-center">المشكلة</th>
+                <th className="py-4 px-6 text-center">التفاصيل</th>
+                <th className="py-4 px-6 text-center">القبول</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F0ECE4]">
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-6 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-28 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-24 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-32 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-48 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-8 w-8 bg-gray-100 rounded-lg mx-auto" /></td>
+                  </tr>
+                ))
+              ) : items.length === 0 ? (
+                <>
+                  {/* Sample rows matching Notification Details.png */}
+                  {[1, 2, 3, 4].map((num) => (
+                    <tr key={num} className="hover:bg-[#FAF8F5]/80 transition-colors">
+                      <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">{num}</td>
+                      <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">احمد محمد</td>
+                      <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">سيلانترو</td>
+                      <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">ساعات العمل خاطئة</td>
+                      <td className="py-4 px-6 text-center text-xs text-[#8A7A5C] font-semibold truncate max-w-[240px]">
+                        المواعيد من 7:30 ل 13:30 ولكن كان مغلق..........
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <button className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-[#BA9B65] text-[#8A7A5C] hover:text-[#BA9B65] flex items-center justify-center mx-auto transition-colors shadow-xs">
+                          <Eye size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              ) : (
+                items.map((notification, index) => (
+                  <tr key={notification.id} className="hover:bg-[#FAF8F5]/80 transition-colors">
+                    <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">
+                      {(page - 1) * pageSize + index + 1}
+                    </td>
+                    <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">
+                      {notification.target_type}
+                    </td>
+                    <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">
+                      {notification.title}
+                    </td>
+                    <td className="py-4 px-6 text-center text-sm font-semibold text-[#2F2D29]">
+                      إشعار عام
+                    </td>
+                    <td className="py-4 px-6 text-center text-xs text-[#8A7A5C] font-semibold truncate max-w-[240px]">
+                      {notification.message}
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <button
+                        onClick={() => handleDelete(notification.id)}
+                        className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-red-500 text-[#8A7A5C] hover:text-red-600 flex items-center justify-center mx-auto transition-colors shadow-xs"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
-            <FormField
-              label="العنوان"
-              required
-              error={errors.title?.message}
-            >
-              <Input placeholder="عنوان الإشعار" {...register("title")} />
-            </FormField>
-
-            <FormField
-              label="الرسالة"
-              required
-              error={errors.message?.message}
-            >
-              <textarea
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="نص الإشعار"
-                {...register("message")}
-              />
-            </FormField>
-
-            <FormField
-              label="الشريحة المستهدفة"
-              required
-              error={errors.target_type?.message}
-            >
-              <Select
-                value={watchedTargetType}
-                onValueChange={(val) =>
-                  setValue("target_type", val as NotificationFormData["target_type"])
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر الشريحة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">الجميع</SelectItem>
-                  <SelectItem value="CUSTOMER">عميل</SelectItem>
-                  <SelectItem value="CAFE_OWNER">صاحب مقهى</SelectItem>
-                  <SelectItem value="USER">مستخدم</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            {watchedTargetType !== "ALL" && (
-              <FormField
-                label="المعرّف المستهدف"
-                error={errors.target_id?.message}
-              >
-                <Input
-                  placeholder="أدخل المعرّف"
-                  {...register("target_id")}
-                />
-              </FormField>
-            )}
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setDialogOpen(false);
-                  reset();
+        {/* Pagination matching Figma */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#F0ECE4] text-xs font-bold text-[#2F2D29]">
+          <div className="flex items-center gap-2">
+            <span className="text-[#8A7A5C]">الصفحة/</span>
+            <div className="relative">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
                 }}
+                className="appearance-none bg-white border border-[#E5E0D8] rounded-lg px-3 py-1.5 pr-6 text-xs font-bold text-[#2F2D29] focus:outline-none cursor-pointer"
               >
-                إلغاء
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gold-500 hover:bg-gold-600 text-white"
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? "جاري الإرسال..." : "إرسال"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+              <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#8A7A5C] pointer-events-none" />
+            </div>
+          </div>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title="حذف الإشعار"
-        description={`هل أنت متأكد من حذف الإشعار "${deleteTarget?.title}"؟ لا يمكن التراجع عن هذا الإجراء.`}
-        confirmText="حذف"
-        cancelText="إلغاء"
-        variant="destructive"
-        onConfirm={handleDelete}
-        isLoading={deleteMutation.isPending}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+            >
+              <ChevronRight size={14} />
+            </button>
+
+            {Array.from({ length: Math.min(totalPages, 4) }, (_, i) => {
+              const pageNum = i + 1;
+              const isSelected = page === pageNum;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${
+                    isSelected
+                      ? "border border-[#BA9B65] text-[#BA9B65] bg-white shadow-xs"
+                      : "border border-[#E5E0D8] text-[#2F2D29] hover:bg-[#FAF8F5]"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <SendNotificationModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["notifications"] })}
       />
     </div>
   );

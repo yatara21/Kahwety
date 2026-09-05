@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'PUT /events/{event_id}'
-method: PUT
-url: '{{baseUrl}}/events/{{eventId}}'
-order: 17000

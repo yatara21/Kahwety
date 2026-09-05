@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from typing import Optional, List
 from app.modules.offers.models import Offer
 from app.modules.offers.schemas import OfferCreate, OfferUpdate
@@ -15,6 +15,7 @@ class OfferRepository:
             title=offer_create.title,
             description=offer_create.description,
             discount_percentage=offer_create.discount_percentage,
+            image_url=offer_create.image_url,
             start_date=offer_create.start_date,
             end_date=offer_create.end_date,
             status=offer_create.status
@@ -59,12 +60,25 @@ class OfferRepository:
         self,
         status: Optional[str] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        search: Optional[str] = None,
+        cafe_id: Optional[str] = None,
     ) -> tuple[List[Offer], int]:
         query = select(Offer)
-        
+
+        if cafe_id:
+            query = query.where(Offer.cafe_id == cafe_id)
+
         if status:
             query = query.where(Offer.status == status)
+
+        if search:
+            query = query.where(
+                or_(
+                    Offer.title.ilike(f"%{search}%"),
+                    Offer.description.ilike(f"%{search}%"),
+                )
+            )
         
         # Get total count
         from sqlalchemy import func

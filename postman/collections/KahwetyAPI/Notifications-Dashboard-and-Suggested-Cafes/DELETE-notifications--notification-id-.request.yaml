@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'DELETE /notifications/{notification_id}'
-method: DELETE
-url: '{{baseUrl}}/notifications/{{notificationId}}'
-order: 4000

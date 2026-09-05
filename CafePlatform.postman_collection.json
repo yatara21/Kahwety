@@ -1,37 +1,111 @@
 {
   "info": {
     "name": "Kahwety API",
-    "description": "Current FastAPI routes for the Kahwety production API. Set apiOrigin and accessToken in your Postman environment before sending protected requests.",
+    "description": "Production Postman Collection for Kahwety Cafe Platform API (FastAPI backend). Includes Authentication, Admins, Permissions, Users, Cafes, Branches, Google Maps, Products, Offers, Events, Complaints, Subscriptions, Coupons, Notifications, Dashboard, Suggested Cafes, Mobile API, File Uploads, and Webhooks.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "apiOrigin", "value": "https://api.example.com" },
-    { "key": "baseUrl", "value": "{{apiOrigin}}/api/v1" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" },
-    { "key": "userId", "value": "" },
-    { "key": "cafeId", "value": "" },
-    { "key": "planId", "value": "" },
-    { "key": "branchId", "value": "" },
-    { "key": "productId", "value": "" },
-    { "key": "offerId", "value": "" },
-    { "key": "eventId", "value": "" },
-    { "key": "complaintId", "value": "" },
-    { "key": "subscriptionId", "value": "" },
-    { "key": "couponId", "value": "" },
-    { "key": "notificationId", "value": "" },
-    { "key": "suggestedCafeId", "value": "" }
+    {
+      "key": "apiOrigin",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "baseUrl",
+      "value": "{{apiOrigin}}/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "cafeId",
+      "value": ""
+    },
+    {
+      "key": "planId",
+      "value": ""
+    },
+    {
+      "key": "branchId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "offerId",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    },
+    {
+      "key": "complaintId",
+      "value": ""
+    },
+    {
+      "key": "subscriptionId",
+      "value": ""
+    },
+    {
+      "key": "couponId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "suggestedCafeId",
+      "value": ""
+    }
   ],
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
   },
   "item": [
     {
       "name": "Health",
       "item": [
-        { "name": "GET /health", "request": { "method": "GET", "url": "{{apiOrigin}}/health" } },
-        { "name": "GET /ready", "request": { "method": "GET", "url": "{{apiOrigin}}/ready" } }
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "url": "{{apiOrigin}}/health",
+            "description": "Service liveness health check",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /ready",
+          "request": {
+            "method": "GET",
+            "url": "{{apiOrigin}}/ready",
+            "description": "Database readiness health check",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
       ]
     },
     {
@@ -41,171 +115,1654 @@
           "name": "POST /auth/register",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"full_name\": \"Example Customer\",\n  \"email\": \"customer@example.com\",\n  \"password\": \"Use-a-strong-test-password\",\n  \"role\": \"CUSTOMER\"\n}" },
-            "url": "{{baseUrl}}/auth/register"
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Register a new customer or cafe owner account",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Example Customer\",\n  \"email\": \"customer@example.com\",\n  \"password\": \"StrongPassword123!\",\n  \"phone\": \"+966500000000\",\n  \"role\": \"CUSTOMER\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
           }
         },
         {
           "name": "POST /auth/login",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Use-a-strong-test-password\"\n}" },
-            "url": "{{baseUrl}}/auth/login"
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Log in with email and password to obtain JWT access & refresh tokens",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@kahwety.com\",\n  \"password\": \"SuperAdminPassword123!\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
           }
         },
-        { "name": "POST /auth/google", "request": { "method": "POST", "url": "{{baseUrl}}/auth/google" } },
-        { "name": "POST /auth/send-otp", "request": { "method": "POST", "url": "{{baseUrl}}/auth/send-otp" } },
-        { "name": "POST /auth/verify-otp", "request": { "method": "POST", "url": "{{baseUrl}}/auth/verify-otp" } },
-        { "name": "POST /auth/refresh", "request": { "method": "POST", "url": "{{baseUrl}}/auth/refresh" } },
-        { "name": "GET /auth/me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } },
-        { "name": "POST /auth/logout", "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" } }
+        {
+          "name": "POST /auth/google",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/google",
+            "description": "Authenticate via Google OAuth ID token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"google_id_token_here\",\n  \"role\": \"CUSTOMER\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/send-otp",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/send-otp",
+            "description": "Send SMS OTP verification code to phone number",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+966500000000\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/verify-otp",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/verify-otp",
+            "description": "Verify phone OTP code to log in or complete registration",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+966500000000\",\n  \"code\": \"123456\",\n  \"full_name\": \"Example User\",\n  \"role\": \"CUSTOMER\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/refresh",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Rotate access token using valid refresh token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Get profile and permissions of currently authenticated user"
+          }
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Invalidate current session and tokens"
+          }
+        }
       ]
     },
     {
-      "name": "Admins",
+      "name": "Admins & Permissions",
       "item": [
-        { "name": "GET /admins", "request": { "method": "GET", "url": "{{baseUrl}}/admins" } },
-        { "name": "GET /admins/{admin_id}", "request": { "method": "GET", "url": "{{baseUrl}}/admins/{{userId}}" } },
-        { "name": "POST /admins", "request": { "method": "POST", "url": "{{baseUrl}}/admins" } },
-        { "name": "PUT /admins/{admin_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/admins/{{userId}}" } },
-        { "name": "GET /admins/{admin_id}/permissions", "request": { "method": "GET", "url": "{{baseUrl}}/admins/{{userId}}/permissions" } },
-        { "name": "PUT /admins/{admin_id}/permissions", "request": { "method": "PUT", "url": "{{baseUrl}}/admins/{{userId}}/permissions" } }
+        {
+          "name": "GET /permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/permissions",
+            "description": "Get list of all system permission keys"
+          }
+        },
+        {
+          "name": "GET /admin/permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/permissions",
+            "description": "Get list of all system permission keys (admin alias)"
+          }
+        },
+        {
+          "name": "GET /admins",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admins",
+            "description": "List all administrator accounts"
+          }
+        },
+        {
+          "name": "GET /admins/{admin_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admins/{{userId}}",
+            "description": "Get administrator details by ID"
+          }
+        },
+        {
+          "name": "POST /admins",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admins",
+            "description": "Create a new administrator account with granular permissions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin2@kahwety.com\",\n  \"password\": \"SecurePassword123!\",\n  \"full_name\": \"Operations Admin\",\n  \"phone\": \"+966500000001\",\n  \"permissions\": [\n    \"cafes:read\",\n    \"cafes:write\",\n    \"complaints:read\",\n    \"complaints:write\"\n  ]\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /admins/{admin_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admins/{{userId}}",
+            "description": "Update administrator profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Admin Name\",\n  \"phone\": \"+966500000001\",\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PATCH /admins/{admin_id}/status",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/admins/{{userId}}/status",
+            "description": "Activate or deactivate an administrator account",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "GET /admins/{admin_id}/permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admins/{{userId}}/permissions",
+            "description": "Get permissions assigned to specific admin"
+          }
+        },
+        {
+          "name": "PATCH /admins/{admin_id}/permissions",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/admins/{{userId}}/permissions",
+            "description": "Partially update permissions for an admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    \"cafes:read\",\n    \"cafes:write\",\n    \"complaints:read\"\n  ]\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /admins/{admin_id}/permissions",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admins/{{userId}}/permissions",
+            "description": "Replace all permissions for an admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    \"cafes:read\",\n    \"cafes:write\"\n  ]\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
       ]
     },
     {
       "name": "Users",
       "item": [
-        { "name": "GET /users", "request": { "method": "GET", "url": "{{baseUrl}}/users" } },
-        { "name": "GET /users/{user_id}", "request": { "method": "GET", "url": "{{baseUrl}}/users/{{userId}}" } },
-        { "name": "POST /users", "request": { "method": "POST", "url": "{{baseUrl}}/users" } },
-        { "name": "PUT /users/{user_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/users/{{userId}}" } }
+        {
+          "name": "GET /users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users",
+            "description": "List platform users with pagination and search"
+          }
+        },
+        {
+          "name": "GET /users/{user_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "Get user by ID"
+          }
+        },
+        {
+          "name": "POST /users",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/users",
+            "description": "Directly create a user record (admin)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"InitialPassword123!\",\n  \"full_name\": \"New Platform User\",\n  \"phone\": \"+966511111111\",\n  \"role\": \"CUSTOMER\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /users/{user_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "Update user profile and status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated User Name\",\n  \"phone\": \"+966511111111\",\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
       ]
     },
     {
       "name": "Customers and Cafe Owners",
       "item": [
-        { "name": "GET /customers", "request": { "method": "GET", "url": "{{baseUrl}}/customers" } },
-        { "name": "GET /customers/{customer_id}", "request": { "method": "GET", "url": "{{baseUrl}}/customers/{{userId}}" } },
-        { "name": "PUT /customers/{customer_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/customers/{{userId}}" } },
-        { "name": "GET /cafe-owners", "request": { "method": "GET", "url": "{{baseUrl}}/cafe-owners" } },
-        { "name": "GET /cafe-owners/{owner_id}", "request": { "method": "GET", "url": "{{baseUrl}}/cafe-owners/{{userId}}" } },
-        { "name": "PUT /cafe-owners/{owner_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/cafe-owners/{{userId}}" } }
+        {
+          "name": "GET /customers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/customers",
+            "description": "List all registered customers"
+          }
+        },
+        {
+          "name": "GET /customers/{customer_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/customers/{{userId}}",
+            "description": "Get customer details by ID"
+          }
+        },
+        {
+          "name": "PUT /customers/{customer_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/customers/{{userId}}",
+            "description": "Update customer profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Customer Name\",\n  \"phone\": \"+966500000000\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "GET /cafe-owners",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafe-owners",
+            "description": "List all cafe owners"
+          }
+        },
+        {
+          "name": "GET /cafe-owners/{owner_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafe-owners/{{userId}}",
+            "description": "Get cafe owner details by ID"
+          }
+        },
+        {
+          "name": "PUT /cafe-owners/{owner_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/cafe-owners/{{userId}}",
+            "description": "Update cafe owner profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Owner Name\",\n  \"phone\": \"+966500000002\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
       ]
     },
     {
       "name": "Cafes and Branches",
       "item": [
-        { "name": "GET /cafes/public", "request": { "method": "GET", "url": "{{baseUrl}}/cafes/public" } },
-        { "name": "GET /cafes", "request": { "method": "GET", "url": "{{baseUrl}}/cafes" } },
-        { "name": "GET /cafes/nearby", "request": { "method": "GET", "url": "{{baseUrl}}/cafes/nearby" } },
-        { "name": "GET /cafes/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/cafes/{{cafeId}}" } },
-        { "name": "POST /cafes", "request": { "method": "POST", "url": "{{baseUrl}}/cafes" } },
-        { "name": "PUT /cafes/{cafe_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/cafes/{{cafeId}}" } },
-        { "name": "POST /cafes/{cafe_id}/approve", "request": { "method": "POST", "url": "{{baseUrl}}/cafes/{{cafeId}}/approve" } },
-        { "name": "POST /cafes/{cafe_id}/reject", "request": { "method": "POST", "url": "{{baseUrl}}/cafes/{{cafeId}}/reject" } },
-        { "name": "GET /branches/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/branches/cafe/{{cafeId}}" } },
-        { "name": "GET /branches/{branch_id}", "request": { "method": "GET", "url": "{{baseUrl}}/branches/{{branchId}}" } },
-        { "name": "POST /branches", "request": { "method": "POST", "url": "{{baseUrl}}/branches" } },
-        { "name": "PUT /branches/{branch_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/branches/{{branchId}}" } },
-        { "name": "DELETE /branches/{branch_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/branches/{{branchId}}" } }
+        {
+          "name": "GET /cafes/public",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafes/public",
+            "description": "Public listing of approved active cafes",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /cafes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafes",
+            "description": "List cafes with status filtering, search, and pagination"
+          }
+        },
+        {
+          "name": "GET /cafes/nearby",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafes/nearby?latitude=24.7136&longitude=46.6753&radius_km=10",
+            "description": "Find cafes within geographic radius (km)"
+          }
+        },
+        {
+          "name": "GET /cafes/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafes/{{cafeId}}",
+            "description": "Get full cafe profile including branches"
+          }
+        },
+        {
+          "name": "POST /cafes",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cafes",
+            "description": "Submit a new cafe registration",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Brew & Bean Specialty Coffee\",\n  \"owner_id\": \"{{userId}}\",\n  \"description\": \"Artisan specialty coffee and calm workspace.\",\n  \"city\": \"Riyadh\",\n  \"address\": \"King Fahd Road, Al Olaya\",\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"phone\": \"+966110000000\",\n  \"logo_url\": \"/static/uploads/cafe-logo.png\",\n  \"cover_image_url\": \"/static/uploads/cafe-cover.png\",\n  \"commercial_registration_number\": \"1010000000\",\n  \"tax_number\": \"300000000000003\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /cafes/{cafe_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/cafes/{{cafeId}}",
+            "description": "Update cafe details",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Brew & Bean Roastery\",\n  \"description\": \"Updated description\",\n  \"phone\": \"+966110000000\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "POST /cafes/{cafe_id}/approve",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cafes/{{cafeId}}/approve",
+            "description": "Admin approval of pending cafe"
+          }
+        },
+        {
+          "name": "POST /cafes/{cafe_id}/reject",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cafes/{{cafeId}}/reject",
+            "description": "Admin rejection of pending cafe",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejection_reason\": \"Missing or unclear commercial registration certificate.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "GET /branches/cafe/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/branches/cafe/{{cafeId}}",
+            "description": "List all branches belonging to a cafe"
+          }
+        },
+        {
+          "name": "GET /branches/{branch_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/branches/{{branchId}}",
+            "description": "Get branch details by ID"
+          }
+        },
+        {
+          "name": "POST /branches",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/branches",
+            "description": "Create a new branch for a cafe",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"name\": \"Olaya Main Branch\",\n  \"city\": \"Riyadh\",\n  \"address\": \"King Fahd Road, Building 14\",\n  \"latitude\": 24.7136,\n  \"longitude\": 46.6753,\n  \"phone\": \"+966110000001\",\n  \"opening_time\": \"07:00\",\n  \"closing_time\": \"23:00\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /branches/{branch_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/branches/{{branchId}}",
+            "description": "Update branch details",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Olaya Branch (24 Hours)\",\n  \"opening_time\": \"00:00\",\n  \"closing_time\": \"23:59\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /branches/{branch_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/branches/{{branchId}}",
+            "description": "Delete branch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Google Maps - Cafes & Branches",
+      "item": [
+        {
+          "name": "GET /cafes/map",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cafes/map?latitude=24.7136&longitude=46.6753&radius_km=15&city=Riyadh&has_offers=true",
+            "description": "Get Google Maps markers for approved cafes & branches with GPS, address, working hours, distance, and counts",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /map/cafes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/map/cafes?latitude=24.7136&longitude=46.6753&radius_km=15",
+            "description": "Get Google Maps markers (alias endpoint)",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /map/cafes/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/map/cafes/{{cafeId}}?latitude=24.7136&longitude=46.6753",
+            "description": "Get Google Maps pins for a specific cafe and all of its branches",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/map",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/map?latitude=24.7136&longitude=46.6753&radius_km=25",
+            "description": "Mobile optimized Google Maps markers for cafes & branches",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
       ]
     },
     {
       "name": "Products, Offers, and Events",
       "item": [
-        { "name": "GET /products/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/products/cafe/{{cafeId}}" } },
-        { "name": "GET /products", "request": { "method": "GET", "url": "{{baseUrl}}/products" } },
-        { "name": "GET /products/{product_id}", "request": { "method": "GET", "url": "{{baseUrl}}/products/{{productId}}" } },
-        { "name": "POST /products", "request": { "method": "POST", "url": "{{baseUrl}}/products" } },
-        { "name": "PUT /products/{product_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/products/{{productId}}" } },
-        { "name": "DELETE /products/{product_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/products/{{productId}}" } },
-        { "name": "GET /offers/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/offers/cafe/{{cafeId}}" } },
-        { "name": "GET /offers", "request": { "method": "GET", "url": "{{baseUrl}}/offers" } },
-        { "name": "GET /offers/{offer_id}", "request": { "method": "GET", "url": "{{baseUrl}}/offers/{{offerId}}" } },
-        { "name": "POST /offers", "request": { "method": "POST", "url": "{{baseUrl}}/offers" } },
-        { "name": "PUT /offers/{offer_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/offers/{{offerId}}" } },
-        { "name": "DELETE /offers/{offer_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/offers/{{offerId}}" } },
-        { "name": "GET /events/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/events/cafe/{{cafeId}}" } },
-        { "name": "GET /events", "request": { "method": "GET", "url": "{{baseUrl}}/events" } },
-        { "name": "GET /events/{event_id}", "request": { "method": "GET", "url": "{{baseUrl}}/events/{{eventId}}" } },
-        { "name": "POST /events", "request": { "method": "POST", "url": "{{baseUrl}}/events" } },
-        { "name": "PUT /events/{event_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/events/{{eventId}}" } },
-        { "name": "DELETE /events/{event_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/events/{{eventId}}" } }
+        {
+          "name": "GET /products/cafe/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/cafe/{{cafeId}}",
+            "description": "List products for a specific cafe"
+          }
+        },
+        {
+          "name": "GET /products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products",
+            "description": "List all products across cafes (admin)"
+          }
+        },
+        {
+          "name": "GET /products/{product_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/{{productId}}",
+            "description": "Get product details by ID"
+          }
+        },
+        {
+          "name": "POST /products",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/products",
+            "description": "Create a new product item",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"name\": \"Spanish Latte\",\n  \"description\": \"Rich espresso with condensed sweet milk and steamed foam.\",\n  \"price\": 22.0,\n  \"category\": \"Hot Coffee\",\n  \"image_url\": \"/static/uploads/spanish-latte.png\",\n  \"is_available\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /products/{product_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/products/{{productId}}",
+            "description": "Update product pricing and availability",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 24.0,\n  \"is_available\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /products/{product_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/products/{{productId}}",
+            "description": "Delete a product"
+          }
+        },
+        {
+          "name": "GET /offers/cafe/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/offers/cafe/{{cafeId}}",
+            "description": "List active and past offers for a cafe"
+          }
+        },
+        {
+          "name": "GET /offers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/offers",
+            "description": "List all offers across cafes"
+          }
+        },
+        {
+          "name": "GET /offers/{offer_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/offers/{{offerId}}",
+            "description": "Get offer details by ID"
+          }
+        },
+        {
+          "name": "POST /offers",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/offers",
+            "description": "Publish a new promotional offer",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"title\": \"Saudi National Day Special\",\n  \"description\": \"Enjoy 20% discount on all cold brew and specialty coffee drinks.\",\n  \"discount_percentage\": 20.0,\n  \"start_date\": \"2026-09-20T00:00:00Z\",\n  \"end_date\": \"2026-09-25T23:59:59Z\",\n  \"banner_image_url\": \"/static/uploads/national-day.png\",\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /offers/{offer_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/offers/{{offerId}}",
+            "description": "Update offer details or status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Saudi National Day Extended Offer\",\n  \"discount_percentage\": 25.0,\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /offers/{offer_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/offers/{{offerId}}",
+            "description": "Delete an offer"
+          }
+        },
+        {
+          "name": "GET /events/cafe/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events/cafe/{{cafeId}}",
+            "description": "List events scheduled by a cafe"
+          }
+        },
+        {
+          "name": "GET /events",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events",
+            "description": "List all events across cafes"
+          }
+        },
+        {
+          "name": "GET /events/{event_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events/{{eventId}}",
+            "description": "Get event details by ID"
+          }
+        },
+        {
+          "name": "POST /events",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/events",
+            "description": "Create a cafe event",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"title\": \"Coffee Cupping & Tasting Masterclass\",\n  \"description\": \"Interactive sensory cupping session comparing Ethiopian and Colombian origins.\",\n  \"event_date\": \"2026-10-10T17:00:00Z\",\n  \"capacity\": 25,\n  \"ticket_price\": 60.0,\n  \"cover_image_url\": \"/static/uploads/cupping-event.png\",\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /events/{event_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/events/{{eventId}}",
+            "description": "Update event capacity and details",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 30,\n  \"ticket_price\": 50.0,\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /events/{event_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/events/{{eventId}}",
+            "description": "Delete an event"
+          }
+        }
       ]
     },
     {
       "name": "Complaints",
       "item": [
-        { "name": "GET /complaints/customer/{customer_id}", "request": { "method": "GET", "url": "{{baseUrl}}/complaints/customer/{{userId}}" } },
-        { "name": "GET /complaints/cafe/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/complaints/cafe/{{cafeId}}" } },
-        { "name": "GET /complaints", "request": { "method": "GET", "url": "{{baseUrl}}/complaints" } },
-        { "name": "GET /complaints/{complaint_id}", "request": { "method": "GET", "url": "{{baseUrl}}/complaints/{{complaintId}}" } },
-        { "name": "POST /complaints", "request": { "method": "POST", "url": "{{baseUrl}}/complaints" } },
-        { "name": "PUT /complaints/{complaint_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/complaints/{{complaintId}}" } },
-        { "name": "POST /complaints/{complaint_id}/send-notification", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/send-notification" } },
-        { "name": "POST /complaints/{complaint_id}/transfer", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/transfer" } },
-        { "name": "POST /complaints/{complaint_id}/resolve", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/resolve" } },
-        { "name": "POST /complaints/{complaint_id}/cafe-reply", "request": { "method": "POST", "url": "{{baseUrl}}/complaints/{{complaintId}}/cafe-reply" } }
+        {
+          "name": "GET /complaints/customer/{customer_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/complaints/customer/{{userId}}",
+            "description": "List complaints submitted by a customer"
+          }
+        },
+        {
+          "name": "GET /complaints/cafe/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/complaints/cafe/{{cafeId}}",
+            "description": "List complaints related to a cafe"
+          }
+        },
+        {
+          "name": "GET /complaints",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/complaints",
+            "description": "List all platform complaints (admin)"
+          }
+        },
+        {
+          "name": "GET /complaints/{complaint_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/complaints/{{complaintId}}",
+            "description": "Get complaint details and reply thread"
+          }
+        },
+        {
+          "name": "POST /complaints",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/complaints",
+            "description": "Submit a customer complaint",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"subject\": \"Order Incorrect\",\n  \"description\": \"Received regular milk instead of oat milk ordered.\",\n  \"customer_id\": \"{{userId}}\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /complaints/{complaint_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/complaints/{{complaintId}}",
+            "description": "Update complaint status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_REVIEW\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "POST /complaints/{complaint_id}/send-notification",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/complaints/{{complaintId}}/send-notification",
+            "description": "Send progress notification to customer about complaint",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Your complaint has been assigned to a representative for review.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "POST /complaints/{complaint_id}/transfer",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/complaints/{{complaintId}}/transfer",
+            "description": "Transfer complaint to another department or admin",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_department\": \"Quality Assurance\",\n  \"notes\": \"Transferred for milk allergy compliance audit.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "POST /complaints/{complaint_id}/resolve",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/complaints/{{complaintId}}/resolve",
+            "description": "Mark complaint as resolved",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution_notes\": \"Customer refunded and issued complimentary beverage ticket.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "POST /complaints/{complaint_id}/cafe-reply",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/complaints/{{complaintId}}/cafe-reply",
+            "description": "Submit cafe response to complaint",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reply\": \"We sincerely apologize for this mistake and have retrained our barista staff.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
       ]
     },
     {
       "name": "Plans, Subscriptions, and Coupons",
       "item": [
-        { "name": "GET /admin/subscription-plans", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscription-plans" } },
-        { "name": "GET /admin/subscription-plans/{plan_id}", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}" } },
-        { "name": "POST /admin/subscription-plans", "request": { "method": "POST", "url": "{{baseUrl}}/admin/subscription-plans" } },
-        { "name": "PUT /admin/subscription-plans/{plan_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}" } },
-        { "name": "PATCH /admin/subscription-plans/{plan_id}/activate", "request": { "method": "PATCH", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}/activate" } },
-        { "name": "PATCH /admin/subscription-plans/{plan_id}/deactivate", "request": { "method": "PATCH", "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}/deactivate" } },
-        { "name": "GET /admin/subscriptions", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscriptions" } },
-        { "name": "GET /admin/subscriptions/{subscription_id}", "request": { "method": "GET", "url": "{{baseUrl}}/admin/subscriptions/{{subscriptionId}}" } },
-        { "name": "GET /coupons", "request": { "method": "GET", "url": "{{baseUrl}}/coupons" } },
-        { "name": "GET /coupons/{coupon_id}", "request": { "method": "GET", "url": "{{baseUrl}}/coupons/{{couponId}}" } },
-        { "name": "POST /coupons", "request": { "method": "POST", "url": "{{baseUrl}}/coupons" } },
-        { "name": "PUT /coupons/{coupon_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/coupons/{{couponId}}" } },
-        { "name": "DELETE /coupons/{coupon_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/coupons/{{couponId}}" } }
+        {
+          "name": "GET /subscription-plans",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/subscription-plans",
+            "description": "Public listing of available subscription plans",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /admin/subscription-plans",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/subscription-plans",
+            "description": "Admin listing of all subscription plans"
+          }
+        },
+        {
+          "name": "GET /admin/subscription-plans/{plan_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}",
+            "description": "Get subscription plan details by ID"
+          }
+        },
+        {
+          "name": "POST /admin/subscription-plans",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/subscription-plans",
+            "description": "Create a new subscription tier",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Growth Plan\",\n  \"name_ar\": \"\\u0628\\u0627\\u0642\\u0629 \\u0627\\u0644\\u0646\\u0645\\u0648\",\n  \"description\": \"Ideal for cafes with up to 3 branches.\",\n  \"price\": 199.0,\n  \"billing_cycle\": \"monthly\",\n  \"features\": [\n    \"3_branches\",\n    \"analytics\",\n    \"push_notifications\"\n  ],\n  \"max_branches\": 3,\n  \"max_products\": 50,\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /admin/subscription-plans/{plan_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}",
+            "description": "Update subscription plan pricing and features",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 179.0,\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PATCH /admin/subscription-plans/{plan_id}/activate",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}/activate",
+            "description": "Activate subscription plan"
+          }
+        },
+        {
+          "name": "PATCH /admin/subscription-plans/{plan_id}/deactivate",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/admin/subscription-plans/{{planId}}/deactivate",
+            "description": "Deactivate subscription plan"
+          }
+        },
+        {
+          "name": "GET /subscriptions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/subscriptions",
+            "description": "List subscriptions with cafe details"
+          }
+        },
+        {
+          "name": "GET /admin/subscriptions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/subscriptions",
+            "description": "Admin list subscriptions"
+          }
+        },
+        {
+          "name": "GET /admin/subscriptions/{subscription_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/subscriptions/{{subscriptionId}}",
+            "description": "Get subscription details"
+          }
+        },
+        {
+          "name": "POST /subscriptions",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/subscriptions",
+            "description": "Create or assign a subscription",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"plan_id\": \"{{planId}}\",\n  \"status\": \"ACTIVE\",\n  \"start_date\": \"2026-09-01T00:00:00Z\",\n  \"end_date\": \"2026-10-01T00:00:00Z\",\n  \"auto_renew\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /subscriptions/{subscription_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}",
+            "description": "Update subscription parameters",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auto_renew\": false,\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PATCH /subscriptions/{subscription_id}/renew",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}/renew",
+            "description": "Renew active subscription for another billing cycle"
+          }
+        },
+        {
+          "name": "POST /subscriptions/{subscription_id}/cancel",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}/cancel",
+            "description": "Cancel cafe subscription",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellation_reason\": \"Cafe requested cancellation due to seasonal closure.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "GET /coupons",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/coupons",
+            "description": "List promotional discount coupons"
+          }
+        },
+        {
+          "name": "GET /coupons/{coupon_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/coupons/{{couponId}}",
+            "description": "Get coupon details"
+          }
+        },
+        {
+          "name": "POST /coupons",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/coupons",
+            "description": "Create a discount coupon",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SPECIAL2026\",\n  \"discount_type\": \"PERCENTAGE\",\n  \"discount_value\": 20.0,\n  \"valid_from\": \"2026-09-01T00:00:00Z\",\n  \"valid_until\": \"2026-12-31T23:59:59Z\",\n  \"usage_limit\": 1000,\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /coupons/{coupon_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/coupons/{{couponId}}",
+            "description": "Update coupon terms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usage_limit\": 2000,\n  \"is_active\": true\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /coupons/{coupon_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/coupons/{{couponId}}",
+            "description": "Delete a coupon"
+          }
+        }
       ]
     },
     {
       "name": "Notifications, Dashboard, and Suggested Cafes",
       "item": [
-        { "name": "GET /notifications", "request": { "method": "GET", "url": "{{baseUrl}}/notifications" } },
-        { "name": "GET /notifications/{notification_id}", "request": { "method": "GET", "url": "{{baseUrl}}/notifications/{{notificationId}}" } },
-        { "name": "POST /notifications", "request": { "method": "POST", "url": "{{baseUrl}}/notifications" } },
-        { "name": "DELETE /notifications/{notification_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/notifications/{{notificationId}}" } },
-        { "name": "GET /dashboard", "request": { "method": "GET", "url": "{{baseUrl}}/dashboard" } },
-        { "name": "GET /suggested-cafes", "request": { "method": "GET", "url": "{{baseUrl}}/suggested-cafes" } },
-        { "name": "GET /suggested-cafes/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}" } },
-        { "name": "POST /suggested-cafes", "request": { "method": "POST", "url": "{{baseUrl}}/suggested-cafes" } },
-        { "name": "PUT /suggested-cafes/{cafe_id}", "request": { "method": "PUT", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}" } },
-        { "name": "POST /suggested-cafes/{cafe_id}/approve", "request": { "method": "POST", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/approve" } },
-        { "name": "POST /suggested-cafes/{cafe_id}/reject", "request": { "method": "POST", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/reject" } },
-        { "name": "DELETE /suggested-cafes/{cafe_id}", "request": { "method": "DELETE", "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}" } }
+        {
+          "name": "GET /notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications",
+            "description": "Get system notifications"
+          }
+        },
+        {
+          "name": "GET /admin/notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/notifications",
+            "description": "Admin list notifications"
+          }
+        },
+        {
+          "name": "GET /notifications/{notification_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications/{{notificationId}}",
+            "description": "Get notification by ID"
+          }
+        },
+        {
+          "name": "POST /notifications",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/notifications",
+            "description": "Broadcast or target a notification",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Feature Announcement\",\n  \"message\": \"Google Maps navigation is now available for all registered branches!\",\n  \"target_audience\": \"ALL\",\n  \"priority\": \"HIGH\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /notifications/{notification_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/notifications/{{notificationId}}",
+            "description": "Delete a notification"
+          }
+        },
+        {
+          "name": "GET /dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/dashboard",
+            "description": "Retrieve overall dashboard statistics and metrics"
+          }
+        },
+        {
+          "name": "GET /suggested-cafes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/suggested-cafes",
+            "description": "List community suggested cafes"
+          }
+        },
+        {
+          "name": "GET /suggested-cafes/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}",
+            "description": "Get suggested cafe details"
+          }
+        },
+        {
+          "name": "POST /suggested-cafes",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/suggested-cafes",
+            "description": "Submit a cafe recommendation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dune Coffee Roasters\",\n  \"city\": \"Riyadh\",\n  \"address\": \"Hittin District\",\n  \"latitude\": 24.7742,\n  \"longitude\": 46.6022,\n  \"phone\": \"+966112223333\",\n  \"notes\": \"Award-winning espresso bar with great seating area.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PUT /suggested-cafes/{cafe_id}",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}",
+            "description": "Update suggestion information",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Verified location coordinates and phone number.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "POST /suggested-cafes/{cafe_id}/approve",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/approve",
+            "description": "Approve suggested cafe into pending cafe database"
+          }
+        },
+        {
+          "name": "POST /suggested-cafes/{cafe_id}/reject",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/reject",
+            "description": "Reject suggested cafe recommendation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejection_reason\": \"Location is permanently closed.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "DELETE /suggested-cafes/{cafe_id}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}",
+            "description": "Delete suggested cafe entry"
+          }
+        }
       ]
     },
     {
       "name": "Mobile API",
       "item": [
-        { "name": "GET /mobile/cafes", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes" } },
-        { "name": "GET /mobile/cafes/nearby", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/nearby" } },
-        { "name": "GET /mobile/cafes/{cafe_id}", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}" } },
-        { "name": "GET /mobile/cafes/{cafe_id}/products", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/products" } },
-        { "name": "GET /mobile/cafes/{cafe_id}/offers", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/offers" } },
-        { "name": "GET /mobile/cafes/{cafe_id}/events", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/events" } },
-        { "name": "GET /mobile/complaints", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/complaints" } },
-        { "name": "POST /mobile/complaints", "request": { "method": "POST", "url": "{{baseUrl}}/mobile/complaints" } },
-        { "name": "GET /mobile/plans", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/plans" } },
-        { "name": "POST /mobile/subscriptions", "request": { "method": "POST", "url": "{{baseUrl}}/mobile/subscriptions" } },
-        { "name": "GET /mobile/subscriptions/me", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/subscriptions/me" } },
-        { "name": "GET /mobile/subscriptions/history", "request": { "method": "GET", "url": "{{baseUrl}}/mobile/subscriptions/history" } }
+        {
+          "name": "GET /mobile/cafes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes",
+            "description": "Browse cafes list for mobile home feed",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/nearby",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/nearby?latitude=24.7136&longitude=46.6753&radius_km=10",
+            "description": "Get cafes nearest to user coordinates",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/{cafe_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}",
+            "description": "Get cafe mobile profile with menu preview",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/{cafe_id}/products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/products",
+            "description": "Get products menu for mobile cafe view",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/{cafe_id}/offers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/offers",
+            "description": "Get active discounts for mobile cafe view",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/{cafe_id}/events",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/{{cafeId}}/events",
+            "description": "Get upcoming events for mobile cafe view",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/offers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/offers",
+            "description": "Browse all active platform offers on mobile",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/offers/{offer_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/offers/{{offerId}}",
+            "description": "Get single offer details on mobile",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/events",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/events",
+            "description": "Browse all upcoming platform events on mobile",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/events/{event_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/events/{{eventId}}",
+            "description": "Get single event details on mobile",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/complaints",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/complaints",
+            "description": "Get customer tickets/complaints history"
+          }
+        },
+        {
+          "name": "GET /mobile/complaints/{complaint_id}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/complaints/{{complaintId}}",
+            "description": "Get ticket details and cafe responses"
+          }
+        },
+        {
+          "name": "POST /mobile/complaints",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/mobile/complaints",
+            "description": "Submit a complaint ticket from mobile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cafe_id\": \"{{cafeId}}\",\n  \"subject\": \"Delayed service\",\n  \"description\": \"The line was over 20 minutes for a single cortado.\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "GET /mobile/notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/notifications",
+            "description": "Get user personal notifications inbox"
+          }
+        },
+        {
+          "name": "GET /mobile/plans",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/plans",
+            "description": "Browse available subscription tiers",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /mobile/subscriptions",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/mobile/subscriptions",
+            "description": "Initiate subscription purchase via mobile payment",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"{{planId}}\",\n  \"cafe_id\": \"{{cafeId}}\",\n  \"payment_source_token\": \"src_123456789\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "GET /mobile/subscriptions/me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/subscriptions/me",
+            "description": "Get current active cafe subscription"
+          }
+        },
+        {
+          "name": "GET /mobile/subscriptions/history",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/subscriptions/history",
+            "description": "View past subscription invoices"
+          }
+        },
+        {
+          "name": "POST /mobile/suggested-cafes",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/mobile/suggested-cafes",
+            "description": "Recommend a cafe from mobile app",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Koppi Coffee Lab\",\n  \"city\": \"Riyadh\",\n  \"address\": \"Al Malqa\",\n  \"latitude\": 24.8011,\n  \"longitude\": 46.612,\n  \"phone\": \"+966500112233\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /mobile/cafes/map",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/mobile/cafes/map?latitude=24.7136&longitude=46.6753&radius_km=15",
+            "description": "Map pins for mobile explore view",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Uploads",
+      "item": [
+        {
+          "name": "POST /uploads/image",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/uploads/image",
+            "description": "Upload image for cafe logo, cover, product photo, or banner",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Image file (.jpg, .jpeg, .png, .webp, .gif, .svg up to 10MB)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /admin/uploads/image",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/admin/uploads/image",
+            "description": "Admin image upload alias",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Image file (.jpg, .jpeg, .png, .webp, .gif, .svg up to 10MB)"
+                }
+              ]
+            }
+          }
+        }
       ]
     },
     {
       "name": "Webhooks",
       "item": [
-        { "name": "POST /webhooks/moyasar", "request": { "method": "POST", "url": "{{baseUrl}}/webhooks/moyasar" } }
+        {
+          "name": "POST /webhooks/moyasar",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/webhooks/moyasar",
+            "description": "Process Moyasar payment gateway webhook callback",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"pay_test_123456789\",\n  \"status\": \"paid\",\n  \"amount\": 29900,\n  \"currency\": \"SAR\",\n  \"fee\": 700,\n  \"description\": \"Subscription Payment for Plan\",\n  \"invoice_id\": \"inv_123\",\n  \"source\": {\n    \"type\": \"creditcard\",\n    \"company\": \"visa\",\n    \"name\": \"Test Cardholder\",\n    \"number\": \"XXXX-XXXX-XXXX-1111\",\n    \"message\": \"Succeeded\"\n  }\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
       ]
     }
   ]

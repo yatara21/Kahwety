@@ -1,4 +1,4 @@
-from sqlalchemy import String, Enum as SQLEnum
+from sqlalchemy import String, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from app.common.models import BaseModel
 from app.common.enums import NotificationTargetType
@@ -11,3 +11,5 @@ class Notification(BaseModel):
     message: Mapped[str] = mapped_column(String(2000), nullable=False)
     target_type: Mapped[str] = mapped_column(SQLEnum(NotificationTargetType), nullable=False)
     target_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+

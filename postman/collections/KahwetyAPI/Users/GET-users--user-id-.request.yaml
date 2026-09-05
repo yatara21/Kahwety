@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'GET /users/{user_id}'
-method: GET
-url: '{{baseUrl}}/users/{{userId}}'
-order: 2000

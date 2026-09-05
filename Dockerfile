@@ -18,7 +18,8 @@ COPY alembic ./alembic
 COPY app ./app
 COPY scripts/seed_super_admin.py ./scripts/seed_super_admin.py
 
-RUN addgroup --system appgroup \
+RUN mkdir -p /app/static/uploads \
+    && addgroup --system appgroup \
     && adduser --system --ingroup appgroup appuser \
     && chown -R appuser:appgroup /app
 

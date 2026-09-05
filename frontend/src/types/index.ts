@@ -74,6 +74,8 @@ export interface Cafe {
   products?: Product[];
   offers?: Offer[];
   events?: CafeEvent[];
+  complaints_count?: number;
+  is_subscribed?: boolean;
 }
 
 export interface Branch {
@@ -231,11 +233,13 @@ export interface Coupon {
   plan?: SubscriptionPlan;
 }
 
+export type NotificationTargetType = "ALL" | "CUSTOMER" | "CAFE_OWNER" | "CAFE" | "USER";
+
 export interface Notification {
   id: string;
   title: string;
   message: string;
-  target_type: "ALL" | "CUSTOMER" | "CAFE_OWNER" | "CAFE" | "USER";
+  target_type: NotificationTargetType;
   target_id: string | null;
   created_at: string;
 }
@@ -259,6 +263,7 @@ export interface DashboardStats {
   counts: {
     customers: number;
     cafe_owners: number;
+    admins?: number;
     cafes: number;
     pending_cafes: number;
     approved_cafes: number;
@@ -281,6 +286,8 @@ export interface DashboardStats {
     most_purchased_product: string | null;
     most_visited_cafe: string | null;
     least_visited_cafe: string | null;
+    cities_distribution?: Array<{ city: string; count: number; is_highest?: boolean }>;
+    recent_alerts?: string[];
   };
 }
 

@@ -13,7 +13,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 w-full rounded-xl border border-[#E5E0D8] bg-white px-3.5 py-2 text-sm text-[#2F2D29] shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-[#8A7A5C]/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#BA9B65] focus-visible:border-[#BA9B65] disabled:cursor-not-allowed disabled:opacity-50",
           error &&
             "border-destructive focus-visible:ring-destructive",
           className

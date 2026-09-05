@@ -20,6 +20,20 @@ class ComplaintUpdate(BaseModel):
     cafe_response: Optional[str] = Field(None, max_length=2000)
 
 
+class ComplaintCustomerSummary(BaseModel):
+    id: str
+    full_name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ComplaintCafeSummary(BaseModel):
+    id: str
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ComplaintResponse(ComplaintBase):
     id: str
     customer_id: str
@@ -29,4 +43,6 @@ class ComplaintResponse(ComplaintBase):
     cafe_response: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    customer: Optional[ComplaintCustomerSummary] = None
+    cafe: Optional[ComplaintCafeSummary] = None
     model_config = ConfigDict(from_attributes=True)

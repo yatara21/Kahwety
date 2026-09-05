@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'POST /suggested-cafes/{cafe_id}/approve'
-method: POST
-url: '{{baseUrl}}/suggested-cafes/{{suggestedCafeId}}/approve'
-order: 10000

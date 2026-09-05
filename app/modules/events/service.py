@@ -4,6 +4,7 @@ from app.modules.events.repository import EventRepository
 from app.modules.events.schemas import EventCreate, EventUpdate
 from app.modules.events.models import Event
 from app.core.exceptions import NotFoundException
+from app.common.enums import EventStatus
 
 
 class EventService:
@@ -33,9 +34,11 @@ class EventService:
         self,
         status: Optional[str] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        search: Optional[str] = None,
+        cafe_id: Optional[str] = None,
     ) -> tuple[List[Event], int]:
-        return await self.event_repository.list_all(status, page, page_size)
+        return await self.event_repository.list_all(status, page, page_size, search=search, cafe_id=cafe_id)
     
     async def update_event(self, event_id: str, event_update: EventUpdate) -> Event:
         event = await self.get_event(event_id)
@@ -44,3 +47,12 @@ class EventService:
     async def delete_event(self, event_id: str) -> None:
         event = await self.get_event(event_id)
         await self.event_repository.delete(event)
+
+    async def list_all_published_events(
+        self,
+        page: int = 1,
+        page_size: int = 20
+    ) -> tuple[List[Event], int]:
+        """Convenience method for the mobile public feed — only PUBLISHED events."""
+        return await self.event_repository.list_all(EventStatus.PUBLISHED, page, page_size)
+

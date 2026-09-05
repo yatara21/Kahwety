@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'PUT /admins/{admin_id}'
-method: PUT
-url: '{{baseUrl}}/admins/{{userId}}'
-order: 4000

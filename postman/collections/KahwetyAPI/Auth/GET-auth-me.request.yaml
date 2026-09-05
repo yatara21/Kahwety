@@ -1,5 +1,0 @@
-$kind: http-request
-name: GET /auth/me
-method: GET
-url: '{{baseUrl}}/auth/me'
-order: 7000

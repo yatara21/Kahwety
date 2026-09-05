@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'GET /complaints/cafe/{cafe_id}'
-method: GET
-url: '{{baseUrl}}/complaints/cafe/{{cafeId}}'
-order: 2000

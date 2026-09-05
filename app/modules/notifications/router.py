@@ -10,10 +10,11 @@ from app.common.responses import SuccessResponse
 from app.common.pagination import PaginatedResponse, PaginationParams
 
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter(tags=["Notifications"])
 
 
-@router.get("", response_model=SuccessResponse[PaginatedResponse[NotificationResponse]])
+@router.get("/notifications", response_model=SuccessResponse[PaginatedResponse[NotificationResponse]])
+@router.get("/admin/notifications", response_model=SuccessResponse[PaginatedResponse[NotificationResponse]])
 async def list_notifications(
     pagination: PaginationParams = Depends(),
     target_type: Optional[str] = None,
@@ -37,7 +38,8 @@ async def list_notifications(
     return SuccessResponse(data=paginated)
 
 
-@router.get("/{notification_id}", response_model=SuccessResponse[NotificationResponse])
+@router.get("/notifications/{notification_id}", response_model=SuccessResponse[NotificationResponse])
+@router.get("/admin/notifications/{notification_id}", response_model=SuccessResponse[NotificationResponse])
 async def get_notification(
     notification_id: str,
     current_user = Depends(require_page_permission(PagePermission.NOTIFICATIONS)),
@@ -48,18 +50,20 @@ async def get_notification(
     return SuccessResponse(data=NotificationResponse.model_validate(notification))
 
 
-@router.post("", response_model=SuccessResponse[NotificationResponse])
+@router.post("/notifications", response_model=SuccessResponse[NotificationResponse])
+@router.post("/admin/notifications", response_model=SuccessResponse[NotificationResponse])
 async def create_notification(
     notification_create: NotificationCreate,
     current_user = Depends(require_page_permission(PagePermission.NOTIFICATIONS)),
     session: AsyncSession = Depends(get_async_session)
 ):
     service = NotificationService(session)
-    notification = await service.create_notification(notification_create)
+    notification = await service.create_notification(notification_create, created_by=current_user.id)
     return SuccessResponse(data=NotificationResponse.model_validate(notification))
 
 
-@router.delete("/{notification_id}", response_model=SuccessResponse[dict])
+@router.delete("/notifications/{notification_id}", response_model=SuccessResponse[dict])
+@router.delete("/admin/notifications/{notification_id}", response_model=SuccessResponse[dict])
 async def delete_notification(
     notification_id: str,
     current_user = Depends(require_page_permission(PagePermission.NOTIFICATIONS)),

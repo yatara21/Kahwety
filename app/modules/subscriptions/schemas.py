@@ -14,6 +14,17 @@ class SubscribeResponse(BaseModel):
     payment_url: str
 
 
+from app.modules.subscription_plans.schemas import SubscriptionPlanResponse
+
+
+class SubscriptionUserSummary(BaseModel):
+    id: str
+    full_name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SubscriptionResponse(BaseModel):
     id: str
     user_id: str
@@ -23,6 +34,8 @@ class SubscriptionResponse(BaseModel):
     expires_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    user: Optional[SubscriptionUserSummary] = None
+    plan: Optional[SubscriptionPlanResponse] = None
     model_config = ConfigDict(from_attributes=True)
 
 

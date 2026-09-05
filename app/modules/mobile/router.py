@@ -22,7 +22,9 @@ from app.modules.complaints.schemas import ComplaintCreate, ComplaintResponse
 from app.modules.complaints.service import ComplaintService
 from app.modules.events.schemas import EventResponse
 from app.modules.events.service import EventService
-from app.modules.mobile.schemas import MobileComplaintCreate
+from app.modules.mobile.schemas import MobileComplaintCreate, MobileSuggestedCafeCreate
+from app.modules.notifications.schemas import NotificationResponse
+from app.modules.notifications.service import NotificationService
 from app.modules.offers.schemas import OfferResponse
 from app.modules.offers.service import OfferService
 from app.modules.products.schemas import ProductResponse
@@ -35,6 +37,8 @@ from app.modules.subscriptions.schemas import (
     SubscriptionResponse,
 )
 from app.modules.subscriptions.service import SubscriptionService
+from app.modules.suggested_cafes.schemas import SuggestedCafeCreate, SuggestedCafeResponse
+from app.modules.suggested_cafes.service import SuggestedCafeService
 
 
 router = APIRouter(prefix="/mobile", tags=["Mobile API"])
@@ -46,6 +50,10 @@ async def _get_public_cafe(cafe_id: str, session: AsyncSession):
         raise NotFoundException("Cafe not found")
     return cafe
 
+
+# ─────────────────────────────────────────────────────────────
+# Cafes
+# ─────────────────────────────────────────────────────────────
 
 @router.get("/cafes", response_model=SuccessResponse[PaginatedResponse[CafeResponse]])
 async def list_mobile_cafes(
@@ -124,7 +132,7 @@ async def list_mobile_products(
 
 
 @router.get("/cafes/{cafe_id}/offers", response_model=SuccessResponse[PaginatedResponse[OfferResponse]])
-async def list_mobile_offers(
+async def list_mobile_cafe_offers(
     cafe_id: str,
     pagination: PaginationParams = Depends(),
     session: AsyncSession = Depends(get_async_session),
@@ -147,7 +155,7 @@ async def list_mobile_offers(
 
 
 @router.get("/cafes/{cafe_id}/events", response_model=SuccessResponse[PaginatedResponse[EventResponse]])
-async def list_mobile_events(
+async def list_mobile_cafe_events(
     cafe_id: str,
     pagination: PaginationParams = Depends(),
     session: AsyncSession = Depends(get_async_session),
@@ -168,6 +176,74 @@ async def list_mobile_events(
         )
     )
 
+
+# ─────────────────────────────────────────────────────────────
+# Global Offers Feed (public)
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/offers", response_model=SuccessResponse[PaginatedResponse[OfferResponse]])
+async def list_mobile_offers(
+    pagination: PaginationParams = Depends(),
+    session: AsyncSession = Depends(get_async_session),
+):
+    offers, total = await OfferService(session).list_all_active_offers(
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+    return SuccessResponse(
+        data=PaginatedResponse.create(
+            items=[OfferResponse.model_validate(offer) for offer in offers],
+            total=total,
+            page=pagination.page,
+            page_size=pagination.page_size,
+        )
+    )
+
+
+@router.get("/offers/{offer_id}", response_model=SuccessResponse[OfferResponse])
+async def get_mobile_offer(
+    offer_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    offer = await OfferService(session).get_offer(offer_id)
+    return SuccessResponse(data=OfferResponse.model_validate(offer))
+
+
+# ─────────────────────────────────────────────────────────────
+# Global Events Feed (public)
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/events", response_model=SuccessResponse[PaginatedResponse[EventResponse]])
+async def list_mobile_events(
+    pagination: PaginationParams = Depends(),
+    session: AsyncSession = Depends(get_async_session),
+):
+    events, total = await EventService(session).list_all_published_events(
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+    return SuccessResponse(
+        data=PaginatedResponse.create(
+            items=[EventResponse.model_validate(event) for event in events],
+            total=total,
+            page=pagination.page,
+            page_size=pagination.page_size,
+        )
+    )
+
+
+@router.get("/events/{event_id}", response_model=SuccessResponse[EventResponse])
+async def get_mobile_event(
+    event_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    event = await EventService(session).get_event(event_id)
+    return SuccessResponse(data=EventResponse.model_validate(event))
+
+
+# ─────────────────────────────────────────────────────────────
+# Complaints (authenticated customer)
+# ─────────────────────────────────────────────────────────────
 
 @router.get("/complaints", response_model=SuccessResponse[PaginatedResponse[ComplaintResponse]])
 async def list_mobile_complaints(
@@ -194,6 +270,20 @@ async def list_mobile_complaints(
     )
 
 
+@router.get("/complaints/{complaint_id}", response_model=SuccessResponse[ComplaintResponse])
+async def get_mobile_complaint(
+    complaint_id: str,
+    current_user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    if current_user.role != UserRole.CUSTOMER:
+        raise ForbiddenException("Only customers can view complaints")
+    complaint = await ComplaintService(session).get_complaint(complaint_id)
+    if complaint.customer_id != current_user.id:
+        raise ForbiddenException("You can only view your own complaints")
+    return SuccessResponse(data=ComplaintResponse.model_validate(complaint))
+
+
 @router.post("/complaints", response_model=SuccessResponse[ComplaintResponse])
 async def create_mobile_complaint(
     complaint: MobileComplaintCreate,
@@ -213,6 +303,36 @@ async def create_mobile_complaint(
     )
     return SuccessResponse(data=ComplaintResponse.model_validate(created))
 
+
+# ─────────────────────────────────────────────────────────────
+# Notifications (authenticated user feed)
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/notifications", response_model=SuccessResponse[PaginatedResponse[NotificationResponse]])
+async def list_mobile_notifications(
+    pagination: PaginationParams = Depends(),
+    current_user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    notifications, total = await NotificationService(session).list_user_notifications(
+        user_id=current_user.id,
+        user_role=current_user.role,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+    return SuccessResponse(
+        data=PaginatedResponse.create(
+            items=[NotificationResponse.model_validate(n) for n in notifications],
+            total=total,
+            page=pagination.page,
+            page_size=pagination.page_size,
+        )
+    )
+
+
+# ─────────────────────────────────────────────────────────────
+# Subscription Plans (public)
+# ─────────────────────────────────────────────────────────────
 
 @router.get("/plans", response_model=SuccessResponse[PaginatedResponse[SubscriptionPlanResponse]])
 async def list_mobile_plans(
@@ -235,6 +355,10 @@ async def list_mobile_plans(
         )
     )
 
+
+# ─────────────────────────────────────────────────────────────
+# Subscriptions (authenticated)
+# ─────────────────────────────────────────────────────────────
 
 @router.post("/subscriptions", response_model=SuccessResponse[SubscribeResponse])
 async def create_mobile_subscription(
@@ -281,3 +405,29 @@ async def list_mobile_subscription_history(
             page_size=pagination.page_size,
         )
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# Suggested Cafes (authenticated — any registered user)
+# ─────────────────────────────────────────────────────────────
+
+@router.post("/suggested-cafes", response_model=SuccessResponse[SuggestedCafeResponse])
+async def submit_suggested_cafe(
+    data: MobileSuggestedCafeCreate,
+    current_user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    service = SuggestedCafeService(session)
+    cafe = await service.create(
+        SuggestedCafeCreate(
+            owner_name=data.owner_name,
+            city=data.city,
+            phone=data.phone,
+            google_link=data.google_link,
+            website=data.website,
+            facebook=data.facebook,
+            instagram=data.instagram,
+            telegram=data.telegram,
+        )
+    )
+    return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))

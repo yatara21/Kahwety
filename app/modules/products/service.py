@@ -34,9 +34,11 @@ class ProductService:
     async def list_all_products(
         self,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        search: Optional[str] = None,
+        cafe_id: Optional[str] = None,
     ) -> tuple[List[Product], int]:
-        return await self.product_repository.list_all(page, page_size)
+        return await self.product_repository.list_all(page, page_size, search=search, cafe_id=cafe_id)
     
     async def update_product(self, product_id: str, product_update: ProductUpdate) -> Product:
         product = await self.get_product(product_id)

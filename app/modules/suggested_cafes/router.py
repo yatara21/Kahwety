@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from app.core.database import get_async_session
-from app.core.permissions import require_page_permission
+from app.core.permissions import require_page_permission, get_current_user
 from app.modules.suggested_cafes.service import SuggestedCafeService
 from app.modules.suggested_cafes.schemas import (
     SuggestedCafeCreate,
@@ -14,10 +14,25 @@ from app.common.responses import MessageResponse, SuccessResponse
 from app.common.pagination import PaginatedResponse, PaginationParams
 
 
-router = APIRouter(prefix="/suggested-cafes", tags=["Suggested Cafes"])
+router = APIRouter(tags=["Suggested Cafes"])
 
 
-@router.get("", response_model=SuccessResponse[PaginatedResponse[SuggestedCafeResponse]])
+@router.post("/suggested-cafes", response_model=SuccessResponse[SuggestedCafeResponse])
+async def create_suggested_cafe(
+    data: SuggestedCafeCreate,
+    session: AsyncSession = Depends(get_async_session),
+):
+    service = SuggestedCafeService(session)
+    cafe = await service.create(data)
+    return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))
+
+
+# ─────────────────────────────────────────────────────────────
+# Admin routes  (dual-mounted: /suggested-cafes + /admin/suggested-cafes)
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/suggested-cafes", response_model=SuccessResponse[PaginatedResponse[SuggestedCafeResponse]])
+@router.get("/admin/suggested-cafes", response_model=SuccessResponse[PaginatedResponse[SuggestedCafeResponse]])
 async def list_suggested_cafes(
     pagination: PaginationParams = Depends(),
     status: Optional[str] = None,
@@ -43,7 +58,8 @@ async def list_suggested_cafes(
     return SuccessResponse(data=paginated)
 
 
-@router.get("/{cafe_id}", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.get("/suggested-cafes/{cafe_id}", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.get("/admin/suggested-cafes/{cafe_id}", response_model=SuccessResponse[SuggestedCafeResponse])
 async def get_suggested_cafe(
     cafe_id: str,
     current_user=Depends(require_page_permission(PagePermission.SUGGESTED_CAFES)),
@@ -54,18 +70,8 @@ async def get_suggested_cafe(
     return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))
 
 
-@router.post("", response_model=SuccessResponse[SuggestedCafeResponse])
-async def create_suggested_cafe(
-    data: SuggestedCafeCreate,
-    current_user=Depends(require_page_permission(PagePermission.SUGGESTED_CAFES)),
-    session: AsyncSession = Depends(get_async_session),
-):
-    service = SuggestedCafeService(session)
-    cafe = await service.create(data)
-    return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))
-
-
-@router.put("/{cafe_id}", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.put("/suggested-cafes/{cafe_id}", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.put("/admin/suggested-cafes/{cafe_id}", response_model=SuccessResponse[SuggestedCafeResponse])
 async def update_suggested_cafe(
     cafe_id: str,
     data: SuggestedCafeUpdate,
@@ -77,7 +83,11 @@ async def update_suggested_cafe(
     return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))
 
 
-@router.post("/{cafe_id}/approve", response_model=SuccessResponse[SuggestedCafeResponse])
+# Support both POST and PATCH for approve/reject (existing POST kept, PATCH added)
+@router.post("/suggested-cafes/{cafe_id}/approve", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.patch("/suggested-cafes/{cafe_id}/approve", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.post("/admin/suggested-cafes/{cafe_id}/approve", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.patch("/admin/suggested-cafes/{cafe_id}/approve", response_model=SuccessResponse[SuggestedCafeResponse])
 async def approve_suggested_cafe(
     cafe_id: str,
     current_user=Depends(require_page_permission(PagePermission.SUGGESTED_CAFES)),
@@ -88,7 +98,10 @@ async def approve_suggested_cafe(
     return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))
 
 
-@router.post("/{cafe_id}/reject", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.post("/suggested-cafes/{cafe_id}/reject", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.patch("/suggested-cafes/{cafe_id}/reject", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.post("/admin/suggested-cafes/{cafe_id}/reject", response_model=SuccessResponse[SuggestedCafeResponse])
+@router.patch("/admin/suggested-cafes/{cafe_id}/reject", response_model=SuccessResponse[SuggestedCafeResponse])
 async def reject_suggested_cafe(
     cafe_id: str,
     current_user=Depends(require_page_permission(PagePermission.SUGGESTED_CAFES)),
@@ -99,7 +112,8 @@ async def reject_suggested_cafe(
     return SuccessResponse(data=SuggestedCafeResponse.model_validate(cafe))
 
 
-@router.delete("/{cafe_id}", response_model=SuccessResponse[MessageResponse])
+@router.delete("/suggested-cafes/{cafe_id}", response_model=SuccessResponse[MessageResponse])
+@router.delete("/admin/suggested-cafes/{cafe_id}", response_model=SuccessResponse[MessageResponse])
 async def delete_suggested_cafe(
     cafe_id: str,
     current_user=Depends(require_page_permission(PagePermission.SUGGESTED_CAFES)),

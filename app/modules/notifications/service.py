@@ -31,11 +31,15 @@ class NotificationService:
                 user = await self.user_repository.get_by_id(target_id)
                 if user and user.phone:
                     phones.append(user.phone)
+            else:
+                phones.extend(await self.user_repository.list_phones_by_role(UserRole.CUSTOMER))
         elif target_type == NotificationTargetType.CAFE_OWNER:
             if target_id:
                 user = await self.user_repository.get_by_id(target_id)
                 if user and user.phone:
                     phones.append(user.phone)
+            else:
+                phones.extend(await self.user_repository.list_phones_by_role(UserRole.CAFE_OWNER))
         elif target_type == NotificationTargetType.USER:
             if target_id:
                 user = await self.user_repository.get_by_id(target_id)
@@ -51,8 +55,12 @@ class NotificationService:
 
         return list(dict.fromkeys(phones))
 
-    async def create_notification(self, notification_create: NotificationCreate) -> Notification:
-        notification = await self.notification_repository.create(notification_create)
+    async def create_notification(
+        self,
+        notification_create: NotificationCreate,
+        created_by: Optional[str] = None
+    ) -> Notification:
+        notification = await self.notification_repository.create(notification_create, created_by=created_by)
 
         try:
             phones = await self._resolve_target_phones(
@@ -83,6 +91,15 @@ class NotificationService:
         page_size: int = 20
     ) -> tuple[List[Notification], int]:
         return await self.notification_repository.list_all(target_type, target_id, page, page_size)
+
+    async def list_user_notifications(
+        self,
+        user_id: str,
+        user_role: UserRole,
+        page: int = 1,
+        page_size: int = 20
+    ) -> tuple[List[Notification], int]:
+        return await self.notification_repository.list_for_user(user_id, user_role, page, page_size)
 
     async def delete_notification(self, notification_id: str) -> None:
         notification = await self.get_notification(notification_id)

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from typing import Optional, List
 from app.modules.products.models import Product
 from app.modules.products.schemas import ProductCreate, ProductUpdate
@@ -58,9 +58,23 @@ class ProductRepository:
     async def list_all(
         self,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
+        search: Optional[str] = None,
+        cafe_id: Optional[str] = None,
     ) -> tuple[List[Product], int]:
         query = select(Product)
+
+        if cafe_id:
+            query = query.where(Product.cafe_id == cafe_id)
+
+        if search:
+            query = query.where(
+                or_(
+                    Product.name.ilike(f"%{search}%"),
+                    Product.name_en.ilike(f"%{search}%"),
+                    Product.description.ilike(f"%{search}%"),
+                )
+            )
         
         # Get total count
         from sqlalchemy import func

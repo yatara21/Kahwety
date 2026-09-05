@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Upload, Pencil, Trash2 } from "lucide-react";
+import { Plus, Upload, Pencil, Trash2, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ import {
 import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@/hooks/useEvents";
 import { useCafes } from "@/hooks/useCafes";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { uploadApi } from "@/api/upload";
+import { getImageUrl } from "@/utils/imageUrl";
 
 const eventSchema = z.object({
   title: z.string().min(1, "اسم الفعالية مطلوب"),
@@ -34,6 +36,8 @@ export default function EventsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useEvents({ page: 1, page_size: 100 });
@@ -45,14 +49,37 @@ export default function EventsPage() {
   const events = data?.items ?? [];
   const cafes = cafesData?.items ?? [];
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<EventFormData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: { title: "", description: "", location: "", image_url: "", event_date: "", cafe_id: "" },
   });
 
+  const currentImageUrl = watch("image_url");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await uploadApi.uploadImage(file);
+      setValue("image_url", res.url);
+    } catch (err) {
+      console.error("Upload error", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingEvent(null);
-    reset({ title: "", description: "", location: "", image_url: "", event_date: "", cafe_id: "" });
+    reset({
+      title: "",
+      description: "",
+      location: "الفرع الرئيسي",
+      image_url: "",
+      event_date: new Date().toISOString().slice(0, 16),
+      cafe_id: cafes[0]?.id || "",
+    });
     setDialogOpen(true);
   };
 
@@ -70,8 +97,14 @@ export default function EventsPage() {
   };
 
   const onSubmit = (formData: EventFormData) => {
+    const targetCafeId = formData.cafe_id || cafes[0]?.id;
+    if (!targetCafeId) {
+      alert("يرجى اختيار مقهى");
+      return;
+    }
     const payload = {
       ...formData,
+      cafe_id: targetCafeId,
       image_url: formData.image_url || null,
       event_date: new Date(formData.event_date).toISOString(),
       status: "PUBLISHED" as const,
@@ -123,7 +156,7 @@ export default function EventsPage() {
             {events.map((event) => (
               <div key={event.id} className="bg-white rounded-2xl border border-[#e8dcc8]/50 overflow-hidden">
                 {event.image_url ? (
-                  <img src={event.image_url} alt={event.title} className="h-32 w-full object-cover" />
+                  <img src={getImageUrl(event.image_url)} alt={event.title} className="h-32 w-full object-cover" />
                 ) : (
                   <div className="h-32 bg-gradient-to-br from-amber-100 to-amber-50" />
                 )}
@@ -161,37 +194,64 @@ export default function EventsPage() {
 
       {/* Add Event Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && setDialogOpen(false)}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogContent className="sm:max-w-md bg-white text-[#2F2D29] rounded-3xl p-6 border border-[#EAE6DF] shadow-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-[#2f2d29]">
+            <DialogTitle className="text-xl font-extrabold text-[#2F2D29] text-right mb-2">
               {editingEvent ? "تعديل الفعالية" : "إضافة فعالية"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">صورة الفعالية (رابط)</Label>
-              <Input {...register("image_url")} placeholder="https://example.com/event.jpg" className="border-[#e0d5b8]" dir="ltr" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">صورة الفعالية</Label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileUpload}
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-[#E5E0D8] rounded-2xl p-4 text-center hover:border-[#BA9B65] transition-colors cursor-pointer bg-white"
+              >
+                {currentImageUrl ? (
+                  <div className="space-y-2">
+                    <img src={getImageUrl(currentImageUrl)} alt="Event Preview" className="h-20 w-auto rounded-lg mx-auto object-cover" />
+                    <p className="text-xs text-[#8A7A5C] font-bold">اضغط لتغيير الصورة</p>
+                  </div>
+                ) : uploading ? (
+                  <div className="flex items-center justify-center gap-2 py-4">
+                    <LoaderCircle className="animate-spin text-[#BA9B65]" size={20} />
+                    <span className="text-xs font-bold text-[#8A7A5C]">جاري رفع الصورة...</span>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-6 w-6 mx-auto text-[#BA9B65] mb-2" />
+                    <p className="text-xs font-bold text-[#8A7A5C]">اضغط هنا لرفع الصورة</p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">اسم الفعالية</Label>
-              <Input {...register("title")} className="border-[#e0d5b8]" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">اسم الفعالية</Label>
+              <Input {...register("title")} placeholder="مثال: بطولة الباريستا للاتيه آرت" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29] placeholder:text-[#8A7A5C]/70" />
               {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">تاريخ الفعالية</Label>
-              <Input type="datetime-local" {...register("event_date")} className="border-[#e0d5b8]" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">تاريخ الفعالية</Label>
+              <Input type="datetime-local" {...register("event_date")} className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29]" />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">الموقع</Label>
-              <Input {...register("location")} className="border-[#e0d5b8]" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">الموقع</Label>
+              <Input {...register("location")} placeholder="الفرع الرئيسي - الرياض" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29] placeholder:text-[#8A7A5C]/70" />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">المقهى</Label>
-              <select {...register("cafe_id")} className="w-full rounded-xl border border-[#e0d5b8] p-2 text-sm">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">المقهى</Label>
+              <select {...register("cafe_id")} className="w-full h-11 rounded-xl border border-[#E5E0D8] bg-white px-3 text-sm text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]">
                 <option value="">اختر المقهى</option>
                 {cafes.map((cafe) => (
                   <option key={cafe.id} value={cafe.id}>{cafe.name}</option>
@@ -199,14 +259,20 @@ export default function EventsPage() {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-[#2f2d29]">نص وصفي</Label>
-              <textarea {...register("description")} className="w-full min-h-[100px] rounded-xl border border-[#e0d5b8] p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c8a44e]" />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">نص وصفي</Label>
+              <textarea {...register("description")} placeholder="وصف وتفاصيل الفعالية..." rows={3} className="w-full p-3 rounded-xl border border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70 resize-none focus:outline-none focus:border-[#BA9B65]" />
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="border-[#e0d5b8]">إلغاء</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#c8a44e] hover:bg-[#b8943e] text-white">
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              <Button
+                type="button"
+                onClick={() => setDialogOpen(false)}
+                className="flex-1 h-11 bg-[#BA9B65]/15 hover:bg-[#BA9B65] text-[#7A5C28] hover:text-white border border-[#BA9B65] font-bold rounded-xl transition-all shadow-xs"
+              >
+                إلغاء
+              </Button>
+              <Button type="submit" disabled={isSubmitting} className="flex-1 h-11 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold rounded-xl shadow-xs">
                 {isSubmitting ? "جاري الإضافة..." : "إضافة"}
               </Button>
             </DialogFooter>

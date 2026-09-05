@@ -10,6 +10,7 @@ const DashboardLayout = lazy(() =>
 );
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const UsersPage = lazy(() => import("@/pages/UsersPage"));
+const UserProfilePage = lazy(() => import("@/pages/UserProfilePage"));
 const CafeOwnersPage = lazy(() => import("@/pages/CafeOwnersPage"));
 const CafesPage = lazy(() => import("@/pages/CafesPage"));
 const CafeCreatePage = lazy(() => import("@/pages/CafeCreatePage"));
@@ -50,6 +51,7 @@ export function AppRoutes() {
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/users/:id" element={<UserProfilePage />} />
             <Route path="/cafe-owners" element={<CafeOwnersPage />} />
             <Route path="/cafes" element={<CafesPage />} />
             <Route path="/cafes/new" element={<CafeCreatePage />} />

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,14 +26,27 @@ type CafeFormData = z.infer<typeof cafeSchema>;
 
 export default function CafeCreatePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialName = searchParams.get("name") || "";
+  const initialCity = searchParams.get("city") || "";
+
   const createCafe = useCreateCafe();
   const [location, setLocation] = useState<LocationValue>(emptyLocation);
   const [locationError, setLocationError] = useState<string | undefined>();
 
   const form = useForm<CafeFormData>({
     resolver: zodResolver(cafeSchema),
-    defaultValues: { name: "", description: "" },
+    defaultValues: {
+      name: initialName,
+      description: initialCity ? `مقهى مختص في مدينة ${initialCity}` : "",
+    },
   });
+
+  useEffect(() => {
+    if (initialCity && !location.address) {
+      setLocation((prev) => ({ ...prev, address: initialCity }));
+    }
+  }, [initialCity]);
 
   const onSubmit = (formData: CafeFormData) => {
     if (!location.address) {

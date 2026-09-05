@@ -102,14 +102,25 @@ class CafeRepository:
         page_size: int = 20
     ) -> tuple[List[Cafe], int]:
         from app.modules.subscriptions.models import Subscription
+        from app.modules.users.models import User
+        from app.common.enums import SubscriptionStatus, UserRole
         from datetime import datetime, timezone
 
-        # Owners with an active user subscription
-        active_owner_subquery = select(Subscription.user_id).where(
-            and_(
-                Subscription.status == "ACTIVE",
-                Subscription.expires_at.is_not(None),
-                Subscription.expires_at > datetime.now(timezone.utc),
+        # Subscribed cafe owners OR admin/super_admin-owned cafes
+        active_owner_subquery = select(User.id).where(
+            or_(
+                User.role.in_([UserRole.ADMIN, UserRole.SUPER_ADMIN]),
+                User.id.in_(
+                    select(Subscription.user_id).where(
+                        and_(
+                            Subscription.status == SubscriptionStatus.ACTIVE,
+                            or_(
+                                Subscription.expires_at.is_(None),
+                                Subscription.expires_at > datetime.now(timezone.utc),
+                            ),
+                        )
+                    )
+                ),
             )
         )
 
@@ -125,7 +136,7 @@ class CafeRepository:
         from sqlalchemy import func
         count_query = select(func.count()).select_from(query.subquery())
         total_result = await self.session.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
         
         # Apply pagination
         query = query.offset((page - 1) * page_size).limit(page_size)
@@ -144,12 +155,11 @@ class CafeRepository:
         page: int = 1,
         page_size: int = 20
     ) -> tuple[List[Cafe], int]:
-        """List approved active cafes within a radius (km) using haversine distance.
-
-        Foundation for the future nearby-cafes feature.
-        """
+        """List approved active cafes within a radius (km) using haversine distance."""
         from sqlalchemy import func
         from app.modules.subscriptions.models import Subscription
+        from app.modules.users.models import User
+        from app.common.enums import SubscriptionStatus, UserRole
         from datetime import datetime, timezone
 
         earth_radius_km = 6371.0
@@ -162,11 +172,20 @@ class CafeRepository:
         a = func.pow(func.sin(dlat / 2), 2) + func.cos(lat1) * func.cos(lat2) * func.pow(func.sin(dlng / 2), 2)
         distance_km = earth_radius_km * 2 * func.asin(func.sqrt(a))
 
-        active_owner_subquery = select(Subscription.user_id).where(
-            and_(
-                Subscription.status == "ACTIVE",
-                Subscription.expires_at.is_not(None),
-                Subscription.expires_at > datetime.now(timezone.utc),
+        active_owner_subquery = select(User.id).where(
+            or_(
+                User.role.in_([UserRole.ADMIN, UserRole.SUPER_ADMIN]),
+                User.id.in_(
+                    select(Subscription.user_id).where(
+                        and_(
+                            Subscription.status == SubscriptionStatus.ACTIVE,
+                            or_(
+                                Subscription.expires_at.is_(None),
+                                Subscription.expires_at > datetime.now(timezone.utc),
+                            ),
+                        )
+                    )
+                ),
             )
         )
 
@@ -191,7 +210,13 @@ class CafeRepository:
         result = await self.session.execute(query)
         rows = result.all()
 
-        return [row[0] for row in rows], total
+        cafes_with_dist = []
+        for row in rows:
+            cafe_obj = row[0]
+            setattr(cafe_obj, "distance_km", round(row[1], 2))
+            cafes_with_dist.append(cafe_obj)
+
+        return cafes_with_dist, total
 
     async def update(self, cafe: Cafe, cafe_update: CafeUpdate) -> Cafe:
         if cafe_update.name is not None:

@@ -9,43 +9,40 @@ const routeToKey: Record<string, string> = {
   "/users": "users",
   "/cafe-owners": "users",
   "/cafes": "cafes",
+  "/suggested-cafes": "suggested-cafes",
+  "/complaints": "complaints",
+  "/admins": "admins",
+  "/subscriptions": "subscriptions",
   "/products": "products",
   "/offers": "offers",
   "/events": "offers",
-  "/complaints": "complaints",
-  "/subscriptions": "subscriptions",
   "/notifications": "notifications",
-  "/admins": "admins",
-  "/suggested-cafes": "suggested-cafes",
-  "/settings": "settings",
 };
 
 const keyToRoute: Record<string, string> = {
   dashboard: "/",
   users: "/users",
   cafes: "/cafes",
+  "suggested-cafes": "/suggested-cafes",
+  complaints: "/complaints",
+  admins: "/admins",
+  subscriptions: "/subscriptions",
   products: "/products",
   offers: "/offers",
-  complaints: "/complaints",
-  subscriptions: "/subscriptions",
   notifications: "/notifications",
-  admins: "/admins",
-  "suggested-cafes": "/suggested-cafes",
-  settings: "/settings",
 };
 
 const pageTitles: Record<string, string> = {
   dashboard: "لوحة التحكم",
   users: "المستخدمين",
   cafes: "المقاهي",
+  "suggested-cafes": "المقاهي المقترحة",
+  complaints: "الشكاوي",
+  admins: "المسؤولين",
+  subscriptions: "إدارة الاشتراكات",
   products: "المنتجات والخدمات",
   offers: "العروض والفعاليات",
-  complaints: "الشكاوى",
-  subscriptions: "إدارة الاشتراكات",
   notifications: "الإشعارات",
-  admins: "المسؤولون",
-  "suggested-cafes": "المقاهي المقترحة",
-  settings: "الإعدادات",
 };
 
 export function DashboardLayout() {
@@ -57,7 +54,12 @@ export function DashboardLayout() {
 
   const activeKey =
     routeToKey[location.pathname] ||
-    (location.pathname.startsWith("/cafes/") ? "cafes" : "dashboard");
+    (location.pathname.startsWith("/users/") ? "users" :
+     location.pathname.startsWith("/cafes/") ? "cafes" :
+     location.pathname.startsWith("/suggested-cafes/") ? "suggested-cafes" :
+     location.pathname.startsWith("/complaints/") ? "complaints" :
+     location.pathname.startsWith("/admins/") ? "admins" :
+     "dashboard");
 
   const pageTitle = pageTitles[activeKey] || "لوحة التحكم";
 
@@ -69,7 +71,8 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f5f0e8]">
+    <div className="min-h-screen flex bg-[#FAF8F5] text-[#2F2D29]" dir="rtl">
+      {/* Sidebar on Right side in RTL */}
       <Sidebar
         active={activeKey}
         onChange={handleChange}
@@ -80,13 +83,14 @@ export function DashboardLayout() {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      <main className="flex-1 min-w-0 p-4 sm:p-6">
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-y-auto max-h-screen">
         <TopNav
           title={pageTitle}
           onMenuClick={() => setMobileOpen(true)}
         />
 
-        <div className="mt-5">
+        <div className="mt-2">
           <Outlet />
         </div>
       </main>

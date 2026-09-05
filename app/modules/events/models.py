@@ -11,5 +11,6 @@ class Event(BaseModel):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(1000), nullable=False)
     location: Mapped[str] = mapped_column(String(500), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     event_date: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[str] = mapped_column(SQLEnum(EventStatus), nullable=False, default=EventStatus.DRAFT)

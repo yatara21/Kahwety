@@ -18,14 +18,53 @@ class ComplaintService:
         self.complaint_repository = ComplaintRepository(session)
         self.user_repository = UserRepository(session)
 
+    async def _enrich_complaints(self, complaints: List[Complaint]) -> List[Complaint]:
+        if not complaints:
+            return complaints
+        from app.modules.cafes.models import Cafe
+        from app.modules.users.models import User
+        from sqlalchemy import select
+        
+        customer_ids = list({c.customer_id for c in complaints if c.customer_id})
+        cafe_ids = list({c.cafe_id for c in complaints if c.cafe_id})
+
+        user_map = {}
+        if customer_ids:
+            res = await self.session.execute(select(User).where(User.id.in_(customer_ids)))
+            for u in res.scalars().all():
+                user_map[u.id] = {
+                    "id": u.id,
+                    "full_name": u.full_name,
+                    "email": u.email,
+                    "phone": u.phone
+                }
+        
+        cafe_map = {}
+        if cafe_ids:
+            res = await self.session.execute(select(Cafe).where(Cafe.id.in_(cafe_ids)))
+            for c in res.scalars().all():
+                cafe_map[c.id] = {
+                    "id": c.id,
+                    "name": c.name
+                }
+        
+        for c in complaints:
+            c.customer = user_map.get(c.customer_id)
+            c.cafe = cafe_map.get(c.cafe_id)
+            
+        return complaints
+
     async def create_complaint(self, complaint_create: ComplaintCreate) -> Complaint:
-        return await self.complaint_repository.create(complaint_create)
+        complaint = await self.complaint_repository.create(complaint_create)
+        enriched = await self._enrich_complaints([complaint])
+        return enriched[0]
 
     async def get_complaint(self, complaint_id: str) -> Complaint:
         complaint = await self.complaint_repository.get_by_id(complaint_id)
         if not complaint:
             raise NotFoundException("Complaint not found")
-        return complaint
+        enriched = await self._enrich_complaints([complaint])
+        return enriched[0]
 
     async def list_complaints_by_customer(
         self,
@@ -35,7 +74,9 @@ class ComplaintService:
         page_size: int = 20
     ) -> tuple[List[Complaint], int]:
         status_enum = ComplaintStatus(status) if status else None
-        return await self.complaint_repository.list_by_customer(customer_id, status_enum, page, page_size)
+        complaints, total = await self.complaint_repository.list_by_customer(customer_id, status_enum, page, page_size)
+        enriched = await self._enrich_complaints(complaints)
+        return enriched, total
 
     async def list_complaints_by_cafe(
         self,
@@ -45,7 +86,9 @@ class ComplaintService:
         page_size: int = 20
     ) -> tuple[List[Complaint], int]:
         status_enum = ComplaintStatus(status) if status else None
-        return await self.complaint_repository.list_by_cafe(cafe_id, status_enum, page, page_size)
+        complaints, total = await self.complaint_repository.list_by_cafe(cafe_id, status_enum, page, page_size)
+        enriched = await self._enrich_complaints(complaints)
+        return enriched, total
 
     async def list_all_complaints(
         self,
@@ -56,7 +99,9 @@ class ComplaintService:
         page_size: int = 20
     ) -> tuple[List[Complaint], int]:
         status_enum = ComplaintStatus(status) if status else None
-        return await self.complaint_repository.list_all(status_enum, cafe_id, customer_id, page, page_size)
+        complaints, total = await self.complaint_repository.list_all(status_enum, cafe_id, customer_id, page, page_size)
+        enriched = await self._enrich_complaints(complaints)
+        return enriched, total
 
     async def update_complaint(self, complaint_id: str, complaint_update: ComplaintUpdate) -> Complaint:
         complaint = await self.get_complaint(complaint_id)
@@ -76,7 +121,8 @@ class ComplaintService:
             except Exception as exc:
                 logger.exception("Failed to send complaint notification SMS: %s", exc)
 
-        return updated
+        enriched = await self._enrich_complaints([updated])
+        return enriched[0]
 
     async def send_notification(self, complaint_id: str, message: str) -> Complaint:
         complaint = await self.get_complaint(complaint_id)
@@ -94,19 +140,26 @@ class ComplaintService:
         except Exception as exc:
             logger.exception("Failed to send complaint notification SMS: %s", exc)
 
-        return updated
+        enriched = await self._enrich_complaints([updated])
+        return enriched[0]
 
     async def transfer_to_cafe(self, complaint_id: str) -> Complaint:
         complaint = await self.get_complaint(complaint_id)
         update = ComplaintUpdate(status=ComplaintStatus.TRANSFERRED_TO_CAFE)
-        return await self.complaint_repository.update(complaint, update)
+        updated = await self.complaint_repository.update(complaint, update)
+        enriched = await self._enrich_complaints([updated])
+        return enriched[0]
 
     async def resolve_complaint(self, complaint_id: str) -> Complaint:
         complaint = await self.get_complaint(complaint_id)
         update = ComplaintUpdate(status=ComplaintStatus.RESOLVED)
-        return await self.complaint_repository.update(complaint, update)
+        updated = await self.complaint_repository.update(complaint, update)
+        enriched = await self._enrich_complaints([updated])
+        return enriched[0]
 
     async def cafe_reply(self, complaint_id: str, reply: str) -> Complaint:
         complaint = await self.get_complaint(complaint_id)
         update = ComplaintUpdate(cafe_response=reply)
-        return await self.complaint_repository.update(complaint, update)
+        updated = await self.complaint_repository.update(complaint, update)
+        enriched = await self._enrich_complaints([updated])
+        return enriched[0]

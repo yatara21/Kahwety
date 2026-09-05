@@ -49,6 +49,32 @@ class CafeUpdate(BaseModel):
         return self
 
 
+class CafeOwnerSummary(BaseModel):
+    id: str
+    full_name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CafeBranchSummary(BaseModel):
+    id: str
+    name: str
+    address: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CafeProductSummary(BaseModel):
+    id: str
+    name: str
+    name_en: Optional[str] = None
+    price: Optional[float] = None
+    image_url: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CafeResponse(CafeBase):
     id: str
     owner_id: str
@@ -58,6 +84,14 @@ class CafeResponse(CafeBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    owner: Optional[CafeOwnerSummary] = None
+    branches: Optional[list[CafeBranchSummary]] = None
+    products: Optional[list[CafeProductSummary]] = None
+    complaints_count: Optional[int] = 0
+    is_subscribed: Optional[bool] = False
+    distance_km: Optional[float] = None
     model_config = ConfigDict(from_attributes=True)
+
+
 class CafeApprovalRequest(BaseModel):
     status: CafeRegistrationStatus

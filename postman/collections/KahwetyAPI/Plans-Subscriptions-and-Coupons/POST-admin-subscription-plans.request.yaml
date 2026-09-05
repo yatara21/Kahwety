@@ -1,5 +1,0 @@
-$kind: http-request
-name: POST /admin/subscription-plans
-method: POST
-url: '{{baseUrl}}/admin/subscription-plans'
-order: 3000

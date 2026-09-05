@@ -1,5 +1,0 @@
-$kind: http-request
-name: GET /customers
-method: GET
-url: '{{baseUrl}}/customers'
-order: 1000

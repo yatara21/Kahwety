@@ -1,5 +1,0 @@
-$kind: http-request
-name: 'PUT /admins/{admin_id}/permissions'
-method: PUT
-url: '{{baseUrl}}/admins/{{userId}}/permissions'
-order: 6000

@@ -116,7 +116,11 @@ export const apiClient = instance;
 
 export const api = {
   get: async <T>(url: string, params?: Record<string, unknown>): Promise<T> => {
-    const response = await instance.get(url, { params });
+    const queryParams =
+      params && "params" in params && typeof params.params === "object"
+        ? (params.params as Record<string, unknown>)
+        : params;
+    const response = await instance.get(url, { params: queryParams });
     return response.data.data !== undefined ? response.data.data : response.data;
   },
 

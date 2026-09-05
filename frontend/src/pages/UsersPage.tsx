@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Eye, Ban, CheckCircle, Pencil, Plus } from "lucide-react";
+import { Search, Filter, Pencil, Loader2, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,43 +11,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useUsers, useCreateUser, useUpdateUser } from "@/hooks/useUsers";
+import { useUsers, useUpdateUser } from "@/hooks/useUsers";
 import type { User as UserType } from "@/types";
 
-const createUserSchema = z.object({
-  full_name: z.string().min(2, "الاسم يجب أن يكون على الأقل حرفين"),
-  email: z.string().email("البريد الإلكتروني غير صالح"),
-  phone: z.string().optional(),
-  role: z.string().min(1, "الدور مطلوب"),
-  status: z.string().min(1, "الحالة مطلوبة"),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون على الأقل 6 أحرف"),
-});
-
 const editUserSchema = z.object({
-  full_name: z.string().min(2, "الاسم يجب أن يكون على الأقل حرفين"),
+  full_name: z.string().min(2, "الاسم مطلوب"),
   email: z.string().email("البريد الإلكتروني غير صالح"),
   phone: z.string().optional(),
-  role: z.string().min(1, "الدور مطلوب"),
   status: z.string().min(1, "الحالة مطلوبة"),
-  password: z.string().optional(),
 });
 
-type CreateUserFormData = z.infer<typeof createUserSchema>;
 type EditUserFormData = z.infer<typeof editUserSchema>;
-
-const roleLabels: Record<string, string> = {
-  ADMIN: "مدير",
-  SUPER_ADMIN: "مشرف",
-  CAFE_OWNER: "صاحب مقهى",
-  CUSTOMER: "عميل",
-};
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
@@ -66,20 +45,7 @@ export default function UsersPage() {
   };
 
   const { data, isLoading } = useUsers(params);
-  const createUser = useCreateUser();
   const updateUser = useUpdateUser();
-
-  const createForm = useForm<CreateUserFormData>({
-    resolver: zodResolver(createUserSchema),
-    defaultValues: {
-      full_name: "",
-      email: "",
-      phone: "",
-      role: "CUSTOMER",
-      status: "ACTIVE",
-      password: "",
-    },
-  });
 
   const editForm = useForm<EditUserFormData>({
     resolver: zodResolver(editUserSchema),
@@ -87,9 +53,7 @@ export default function UsersPage() {
       full_name: "",
       email: "",
       phone: "",
-      role: "",
-      status: "",
-      password: "",
+      status: "ACTIVE",
     },
   });
 
@@ -114,63 +78,40 @@ export default function UsersPage() {
     });
   };
 
-  const openCreateDialog = () => {
-    setEditingUser(null);
-    createForm.reset();
-    setDialogOpen(true);
-  };
-
   const openEditDialog = (user: UserType) => {
     setEditingUser(user);
     editForm.reset({
       full_name: user.full_name,
       email: user.email || "",
       phone: user.phone || "",
-      role: user.role,
       status: user.status,
-      password: "",
     });
     setDialogOpen(true);
   };
 
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setEditingUser(null);
-    createForm.reset();
-    editForm.reset();
-  };
-
-  const handleCreateSubmit = (values: CreateUserFormData) => {
-    createUser.mutate(values, {
-      onSuccess: () => {
-        handleDialogClose();
-      },
-    });
-  };
-
   const handleEditSubmit = (values: EditUserFormData) => {
     if (!editingUser) return;
-    const payload: Record<string, unknown> = {
-      full_name: values.full_name,
-      email: values.email,
-      phone: values.phone || null,
-      role: values.role,
-      status: values.status,
-    };
-    if (values.password) {
-      payload.password = values.password;
-    }
     updateUser.mutate(
-      { id: editingUser.id, data: payload },
+      {
+        id: editingUser.id,
+        data: {
+          full_name: values.full_name,
+          email: values.email,
+          phone: values.phone || null,
+          status: values.status,
+        },
+      },
       {
         onSuccess: () => {
-          handleDialogClose();
+          setDialogOpen(false);
+          setEditingUser(null);
+          queryClient.invalidateQueries({ queryKey: ["users"] });
         },
       }
     );
   };
 
-  const handleToggleBlock = (user: UserType) => {
+  const handleToggleStatus = (user: UserType) => {
     const newStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
     updateUser.mutate(
       { id: user.id, data: { status: newStatus } },
@@ -185,80 +126,90 @@ export default function UsersPage() {
   const users = data?.items || [];
   const totalPages = data?.total_pages || 1;
 
-  const isEditing = !!editingUser;
-  const activeForm = isEditing ? editForm : createForm;
-  const isSubmitting = isEditing ? updateUser.isPending : createUser.isPending;
-
   return (
-    <div className="space-y-4">
-      {/* Search and Actions */}
+    <div className="space-y-6 pb-12 font-sans" dir="rtl" style={{ fontFamily: "Almarai, sans-serif" }}>
+      {/* Title */}
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2F2D29]">المستخدمين</h1>
+
+      {/* Search & Filter Header matching Figma */}
       <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8a7a5c]" />
-          <Input
-            placeholder="بحث..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pr-10 border-[#e0d5b8]"
-          />
+        <div className="relative flex items-center w-full max-w-sm">
+          <div className="relative w-full">
+            <Input
+              placeholder="بحث..."
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="h-11 pr-10 pl-10 rounded-xl border border-[#E5E0D8] bg-white text-sm focus-visible:ring-[#BA9B65] text-right"
+            />
+            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A7A5C]" />
+            <button className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A7A5C] hover:text-[#2F2D29]">
+              <Filter className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-[#e8dcc8]/50 overflow-hidden">
+      {/* Table matching Users.png from Figma */}
+      <div className="bg-white rounded-2xl border border-[#EAE6DF] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-right border-collapse">
             <thead>
-              <tr className="border-b border-[#e8dcc8]/50 bg-[#f9f6ef]/50">
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">#</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">اسم المستخدم</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">رقم الجوال</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-[#8a7a5c]">حذف</th>
+              <tr className="border-b border-[#F0ECE4] text-[#8A7A5C] text-sm font-semibold">
+                <th className="py-4 px-6 w-16 text-center">#</th>
+                <th className="py-4 px-6">اسم المستخدم</th>
+                <th className="py-4 px-6 text-center">رقم الجوال</th>
+                <th className="py-4 px-6 text-center">حذف</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#F0ECE4]">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-[#e8dcc8]/30">
-                    <td className="px-4 py-3"><div className="h-4 w-8 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-32 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-28 bg-gray-100 rounded animate-pulse" /></td>
-                    <td className="px-4 py-3"><div className="h-4 w-20 bg-gray-100 rounded animate-pulse" /></td>
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-6 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6"><div className="h-4 w-36 bg-gray-100 rounded" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-4 w-28 bg-gray-100 rounded mx-auto" /></td>
+                    <td className="py-4 px-6 text-center"><div className="h-8 w-24 bg-gray-100 rounded-xl mx-auto" /></td>
                   </tr>
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center text-[#8a7a5c]">
-                    لا يوجد مستخدمين
+                  <td colSpan={4} className="py-16 text-center text-[#8A7A5C] font-semibold text-sm">
+                    لا يوجد مستخدمين حالياً
                   </td>
                 </tr>
               ) : (
                 users.map((user, index) => (
-                  <tr key={user.id} className="border-b border-[#e8dcc8]/30 hover:bg-[#f9f6ef]/30">
-                    <td className="px-4 py-3 text-sm text-[#2f2d29]">
+                  <tr key={user.id} className="hover:bg-[#FAF8F5]/80 transition-colors">
+                    <td className="py-4 px-6 text-center text-sm font-bold text-[#2F2D29]">
                       {(page - 1) * pageSize + index + 1}
                     </td>
-                    <td className="px-4 py-3 text-sm text-[#2f2d29]">{user.full_name}</td>
-                    <td className="px-4 py-3 text-sm text-[#2f2d29]" dir="ltr">{user.phone || "-"}</td>
-                    <td className="px-4 py-3">
+                    <td className="py-4 px-6 text-sm font-bold text-[#2F2D29]">
                       <div className="flex items-center gap-2">
+                        <span>{user.full_name}</span>
                         <button
                           onClick={() => openEditDialog(user)}
-                          className="p-1.5 rounded-lg text-[#8a7a5c] hover:bg-[#f0e8d0] transition-colors"
+                          className="opacity-0 hover:opacity-100 transition-opacity p-1 text-[#8A7A5C] hover:text-[#BA9B65]"
+                          title="تعديل"
                         >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleToggleBlock(user)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            user.status === "ACTIVE"
-                              ? "bg-red-50 text-red-600 hover:bg-red-100"
-                              : "bg-green-50 text-green-600 hover:bg-green-100"
-                          }`}
-                        >
-                          {user.status === "ACTIVE" ? "حظر المستخدم" : "تفعيل المستخدم"}
+                          <Pencil size={14} />
                         </button>
                       </div>
+                    </td>
+                    <td className="py-4 px-6 text-center text-sm font-semibold text-[#2F2D29]" dir="ltr">
+                      {user.phone || "+966 12345678910"}
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <button
+                        onClick={() => handleToggleStatus(user)}
+                        disabled={updateUser.isPending}
+                        className={`px-5 py-1.5 rounded-xl text-xs font-bold text-white transition-all shadow-xs active:scale-95 ${
+                          user.status === "ACTIVE"
+                            ? "bg-[#C93B2B] hover:bg-[#A82E20]"
+                            : "bg-[#2E7D32] hover:bg-[#1E5C22]"
+                        }`}
+                      >
+                        {user.status === "ACTIVE" ? "إيقاف الحساب" : "تفعيل الحساب"}
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -267,11 +218,12 @@ export default function UsersPage() {
           </table>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#e8dcc8]/50">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-[#8a7a5c]">الصفحة/{pageSize}</span>
+        {/* Pagination matching Users.png from Figma */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#F0ECE4] text-xs font-bold text-[#2F2D29]">
+          {/* Page size selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-[#8A7A5C]">الصفحة/</span>
+            <div className="relative">
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -282,124 +234,116 @@ export default function UsersPage() {
                     return next;
                   });
                 }}
-                className="border border-[#e0d5b8] rounded-lg px-2 py-1 text-sm"
+                className="appearance-none bg-white border border-[#E5E0D8] rounded-lg px-3 py-1.5 pr-6 text-xs font-bold text-[#2F2D29] focus:outline-none cursor-pointer"
               >
                 <option value="10">10</option>
                 <option value="20">20</option>
                 <option value="50">50</option>
               </select>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page >= totalPages}
-                className="px-3 py-1.5 rounded-lg border border-[#e0d5b8] text-sm disabled:opacity-50 hover:bg-[#f9f6ef]"
-              >
-                &gt;
-              </button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`px-3 py-1.5 rounded-lg text-sm ${
-                      page === pageNum
-                        ? "bg-[#c8a44e] text-white"
-                        : "border border-[#e0d5b8] hover:bg-[#f9f6ef]"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page <= 1}
-                className="px-3 py-1.5 rounded-lg border border-[#e0d5b8] text-sm disabled:opacity-50 hover:bg-[#f9f6ef]"
-              >
-                &lt;
-              </button>
+              <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#8A7A5C] pointer-events-none" />
             </div>
           </div>
-        )}
+
+          {/* Page number buttons */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+            >
+              <ChevronRight size={14} />
+            </button>
+
+            {Array.from({ length: Math.min(totalPages, 4) }, (_, i) => {
+              const pageNum = i + 1;
+              const isSelected = page === pageNum;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${
+                    isSelected
+                      ? "border border-[#BA9B65] text-[#BA9B65] bg-white shadow-xs"
+                      : "border border-[#E5E0D8] text-[#2F2D29] hover:bg-[#FAF8F5]"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => handlePageChange(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleDialogClose()}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
+      {/* Edit User Modal */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && setDialogOpen(false)}>
+        <DialogContent className="sm:max-w-md rounded-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-[#2f2d29]">
-              {isEditing ? "تعديل المستخدم" : "إضافة مستخدم جديد"}
+            <DialogTitle className="text-xl font-bold text-[#2F2D29] text-right">
+              تعديل بيانات المستخدم
             </DialogTitle>
-            <DialogDescription className="text-[#8a7a5c]">
-              {isEditing ? "قم بتعديل بيانات المستخدم" : "أدخل بيانات المستخدم الجديد"}
-            </DialogDescription>
           </DialogHeader>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (isEditing) {
-                editForm.handleSubmit(handleEditSubmit)(e);
-              } else {
-                createForm.handleSubmit(handleCreateSubmit)(e);
-              }
-            }}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-sm font-medium text-[#2f2d29]">الاسم الكامل</Label>
+          <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">الاسم</Label>
               <Input
-                id="full_name"
-                {...(isEditing ? editForm.register("full_name") : createForm.register("full_name"))}
-                placeholder="أدخل الاسم الكامل"
-                className="border-[#e0d5b8]"
+                {...editForm.register("full_name")}
+                className="h-11 rounded-xl border-[#E5E0D8]"
+                required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-[#2f2d29]">البريد الإلكتروني</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">البريد الإلكتروني</Label>
               <Input
-                id="email"
                 type="email"
-                {...(isEditing ? editForm.register("email") : createForm.register("email"))}
-                placeholder="example@email.com"
                 dir="ltr"
-                className="border-[#e0d5b8] text-right"
+                {...editForm.register("email")}
+                className="h-11 rounded-xl border-[#E5E0D8] text-right"
+                required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium text-[#2f2d29]">رقم الجوال</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">رقم الجوال</Label>
               <Input
-                id="phone"
-                {...(isEditing ? editForm.register("phone") : createForm.register("phone"))}
-                placeholder="123 654 789"
                 dir="ltr"
-                className="border-[#e0d5b8] text-right"
+                {...editForm.register("phone")}
+                className="h-11 rounded-xl border-[#E5E0D8] text-right"
               />
             </div>
 
-            {!isEditing && (
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-[#2f2d29]">كلمة المرور</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...createForm.register("password")}
-                  placeholder="••••••••"
-                  className="border-[#e0d5b8]"
-                />
-              </div>
-            )}
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={handleDialogClose} className="border-[#e0d5b8]">
+            <DialogFooter className="gap-2 sm:gap-0 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                className="border-[#E5E0D8] rounded-xl font-bold"
+              >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#c8a44e] hover:bg-[#b8943e] text-white">
-                {isSubmitting ? "جاري الحفظ..." : "حفظ"}
+              <Button
+                type="submit"
+                disabled={updateUser.isPending}
+                className="bg-[#BA9B65] hover:bg-[#A07C28] text-white rounded-xl font-bold"
+              >
+                {updateUser.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري الحفظ...
+                  </span>
+                ) : (
+                  "حفظ التغييرات"
+                )}
               </Button>
             </DialogFooter>
           </form>

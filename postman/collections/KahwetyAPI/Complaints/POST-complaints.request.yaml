@@ -1,5 +1,0 @@
-$kind: http-request
-name: POST /complaints
-method: POST
-url: '{{baseUrl}}/complaints'
-order: 5000

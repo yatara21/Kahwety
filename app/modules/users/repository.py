@@ -173,8 +173,12 @@ class UserRepository:
         search: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
+        role: Optional[UserRole] = None,
     ) -> tuple[List[User], int]:
         query = select(User)
+
+        if role:
+            query = query.where(User.role == role)
 
         if status:
             query = query.where(User.status == status)
