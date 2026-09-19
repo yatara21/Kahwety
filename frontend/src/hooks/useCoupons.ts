@@ -12,7 +12,9 @@ export function useCreateCoupon() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: couponsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["coupons"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["coupons"] });
+    },
   });
 }
 
@@ -20,7 +22,19 @@ export function useUpdateCoupon() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => couponsApi.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["coupons"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["coupons"] });
+    },
+  });
+}
+
+export function useTerminateCoupon() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => couponsApi.terminate(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["coupons"] });
+    },
   });
 }
 
@@ -28,6 +42,8 @@ export function useDeleteCoupon() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => couponsApi.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["coupons"] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["coupons"] });
+    },
   });
 }

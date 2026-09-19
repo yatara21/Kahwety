@@ -53,6 +53,7 @@ export function useApproveCafe() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cafes"] });
       qc.invalidateQueries({ queryKey: ["cafe"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -64,6 +65,7 @@ export function useRejectCafe() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["cafes"] });
       qc.invalidateQueries({ queryKey: ["cafe"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

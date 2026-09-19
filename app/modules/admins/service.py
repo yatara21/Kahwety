@@ -102,9 +102,9 @@ class AdminService:
             if updater_role != UserRole.SUPER_ADMIN:
                 raise ForbiddenException("Only SUPER_ADMIN can change admin roles")
         
-        # Check if email already exists
-        if admin_update.email and await self.user_repository.email_exists(admin_update.email, exclude_id=admin_id):
-            raise ConflictException("Email already registered")
+        # Existing admin's email must NOT be modified
+        if admin_update.email is not None and admin_update.email != admin.email:
+            raise BusinessException("Admin email cannot be modified")
         
         # Check if phone already exists
         if admin_update.phone and await self.user_repository.phone_exists(admin_update.phone, exclude_id=admin_id):
@@ -112,10 +112,11 @@ class AdminService:
         
         user_update = UserUpdateSchema(
             full_name=admin_update.full_name,
-            email=admin_update.email,
+            email=None,
             phone=admin_update.phone,
             status=admin_update.status
         )
+
         
         updated_user = await self.user_repository.update(admin, user_update)
         

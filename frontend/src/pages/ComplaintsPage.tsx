@@ -26,7 +26,9 @@ import {
   useTransferComplaint,
   useResolveComplaint,
 } from "@/hooks/useComplaints";
+import { toast } from "@/hooks/use-toast";
 import type { Complaint } from "@/types";
+
 
 export default function ComplaintsPage() {
   const [search, setSearch] = useState("");
@@ -56,6 +58,7 @@ export default function ComplaintsPage() {
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["complaints"] });
     queryClient.invalidateQueries({ queryKey: ["complaint"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
   const handleSendNotification = () => {
@@ -67,6 +70,17 @@ export default function ComplaintsPage() {
           refresh();
           setSelectedComplaint(null);
           setMessageText("");
+          toast({
+            title: "تم بنجاح",
+            description: "تم إرسال الإشعار والتوضيح للعميل بنجاح",
+          });
+        },
+        onError: (err: any) => {
+          toast({
+            title: "خطأ",
+            description: err?.response?.data?.message || "فشل إرسال الإشعار",
+            variant: "destructive",
+          });
         },
       }
     );
@@ -78,6 +92,17 @@ export default function ComplaintsPage() {
       onSuccess: () => {
         refresh();
         setSelectedComplaint(null);
+        toast({
+          title: "تم بنجاح",
+          description: "تم تحويل الشكوى إلى المقهى بنجاح",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل تحويل الشكوى",
+          variant: "destructive",
+        });
       },
     });
   };
@@ -88,9 +113,21 @@ export default function ComplaintsPage() {
       onSuccess: () => {
         refresh();
         setSelectedComplaint(null);
+        toast({
+          title: "تم بنجاح",
+          description: "تم تحديث الشكوى كـ محلولة بنجاح",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل حل الشكوى",
+          variant: "destructive",
+        });
       },
     });
   };
+
 
   const renderStatusBadge = (status: string) => {
     if (status === "RESOLVED") {

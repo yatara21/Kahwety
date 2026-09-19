@@ -31,6 +31,7 @@ export function useUpdateComplaint() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["complaints"] });
       qc.invalidateQueries({ queryKey: ["complaint"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -43,6 +44,7 @@ export function useSendNotification() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["complaints"] });
       qc.invalidateQueries({ queryKey: ["complaint"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -54,6 +56,7 @@ export function useTransferComplaint() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["complaints"] });
       qc.invalidateQueries({ queryKey: ["complaint"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -65,6 +68,7 @@ export function useResolveComplaint() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["complaints"] });
       qc.invalidateQueries({ queryKey: ["complaint"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

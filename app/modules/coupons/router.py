@@ -68,6 +68,18 @@ async def update_coupon(
     return SuccessResponse(data=CouponResponse.model_validate(coupon))
 
 
+@router.post("/{coupon_id}/terminate", response_model=SuccessResponse[CouponResponse])
+@router.patch("/{coupon_id}/terminate", response_model=SuccessResponse[CouponResponse])
+async def terminate_coupon(
+    coupon_id: str,
+    current_user=Depends(require_page_permission(PagePermission.SUBSCRIPTIONS)),
+    session: AsyncSession = Depends(get_async_session),
+):
+    service = CouponService(session)
+    coupon = await service.terminate_coupon(coupon_id)
+    return SuccessResponse(data=CouponResponse.model_validate(coupon))
+
+
 @router.delete("/{coupon_id}", response_model=SuccessResponse[dict])
 async def delete_coupon(
     coupon_id: str,

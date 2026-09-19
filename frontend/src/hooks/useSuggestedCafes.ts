@@ -30,6 +30,7 @@ export function useApproveSuggestedCafe() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["suggested-cafes"] });
       qc.invalidateQueries({ queryKey: ["suggested-cafe"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -41,6 +42,7 @@ export function useRejectSuggestedCafe() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["suggested-cafes"] });
       qc.invalidateQueries({ queryKey: ["suggested-cafe"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -53,6 +55,7 @@ export function useUpdateSuggestedCafe() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["suggested-cafes"] });
       qc.invalidateQueries({ queryKey: ["suggested-cafe"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -63,6 +66,7 @@ export function useDeleteSuggestedCafe() {
     mutationFn: (id: string) => suggestedCafesApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["suggested-cafes"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

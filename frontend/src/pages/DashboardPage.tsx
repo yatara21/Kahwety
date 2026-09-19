@@ -23,8 +23,10 @@ export default function DashboardPage() {
   const adminsCount = stats?.counts.admins ?? 0;
   const cafesCount = stats?.counts.cafes ?? 0;
   const suggestedCafesCount = stats?.counts.suggested_cafes ?? 0;
-  const complaintsCount = stats?.counts.complaints ?? 0;
+  const openComplaintsCount = stats?.counts.open_complaints ?? stats?.counts.pending_complaints ?? 0;
+  const totalComplaintsCount = stats?.counts.complaints ?? 0;
   const pendingAlertsCount = (stats?.counts.pending_complaints ?? 0) + (stats?.counts.pending_cafes ?? 0) + (stats?.counts.suggested_cafes ?? 0);
+
 
   // City bar chart data matching real database distribution
   const citiesData = stats?.analytics.cities_distribution && stats.analytics.cities_distribution.length > 0
@@ -118,9 +120,10 @@ export default function DashboardPage() {
               <MessageSquareQuote size={20} />
             </div>
             <div className="text-left">
-              <p className="text-2xl font-extrabold text-[#2F2D29]">{complaintsCount}</p>
-              <p className="text-xs font-semibold text-[#8A7A5C]">الشكاوي</p>
+              <p className="text-2xl font-extrabold text-[#2F2D29]">{openComplaintsCount}</p>
+              <p className="text-xs font-semibold text-[#8A7A5C]">الشكاوى المفتوحة</p>
             </div>
+
           </div>
 
           <div className="bg-white rounded-2xl p-4 border border-[#EAE6DF] shadow-xs flex items-center justify-between">

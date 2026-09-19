@@ -3,7 +3,7 @@ from typing import Optional, List
 from app.modules.coupons.repository import CouponRepository
 from app.modules.coupons.schemas import CouponCreate, CouponUpdate
 from app.modules.coupons.models import Coupon
-from app.core.exceptions import NotFoundException, ConflictException
+from app.core.exceptions import NotFoundException, ConflictException, BusinessException
 
 
 class CouponService:
@@ -38,6 +38,13 @@ class CouponService:
             if existing:
                 raise ConflictException("Coupon code already exists")
         return await self.coupon_repository.update(coupon, coupon_update)
+
+    async def terminate_coupon(self, coupon_id: str) -> Coupon:
+        coupon = await self.get_coupon(coupon_id)
+        if not coupon.is_active:
+            raise BusinessException("Coupon is already inactive or terminated")
+        update = CouponUpdate(is_active=False)
+        return await self.coupon_repository.update(coupon, update)
 
     async def delete_coupon(self, coupon_id: str) -> None:
         coupon = await self.get_coupon(coupon_id)

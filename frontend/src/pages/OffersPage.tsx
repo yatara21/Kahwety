@@ -12,6 +12,10 @@ import {
   Loader2,
   LoaderCircle,
   Upload,
+  Eye,
+  Tag,
+  MapPin,
+  Coffee,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +26,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -46,6 +49,7 @@ import { useCafes } from "@/hooks/useCafes";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { uploadApi } from "@/api/upload";
 import { getImageUrl } from "@/utils/imageUrl";
+import { toast } from "@/hooks/use-toast";
 
 const offerSchema = z.object({
   title: z.string().min(1, "عنوان العرض مطلوب"),
@@ -73,7 +77,10 @@ export default function OffersPage() {
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<any>(null);
   const [editingEvent, setEditingEvent] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [selectedViewOffer, setSelectedViewOffer] = useState<any>(null);
+  const [selectedViewEvent, setSelectedViewEvent] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "OFFER" | "EVENT"; id: string; title: string } | null>(null);
+
   const [offerImageUrl, setOfferImageUrl] = useState("");
   const [eventImageUrl, setEventImageUrl] = useState("");
   const [uploadingOfferImg, setUploadingOfferImg] = useState(false);
@@ -85,7 +92,7 @@ export default function OffersPage() {
 
   const { data: offersData, isLoading: offersLoading } = useOffers({ page: 1, page_size: 50 });
   const { data: eventsData, isLoading: eventsLoading } = useEvents({ page: 1, page_size: 50 });
-  const { data: cafesData } = useCafes({ page_size: 1000 });
+  const { data: cafesData } = useCafes({ page_size: 100 });
 
   const createOffer = useCreateOffer();
   const updateOffer = useUpdateOffer();
@@ -125,6 +132,21 @@ export default function OffersPage() {
     setOfferDialogOpen(true);
   };
 
+  const openEditOffer = (offer: any) => {
+    setEditingOffer(offer);
+    setOfferImageUrl(offer.image_url || "");
+    setFormError(null);
+    offerForm.reset({
+      title: offer.title,
+      description: offer.description,
+      discount_percentage: offer.discount_percentage,
+      cafe_id: offer.cafe_id,
+      start_date: offer.start_date ? new Date(offer.start_date).toISOString().split("T")[0] : "",
+      end_date: offer.end_date ? new Date(offer.end_date).toISOString().split("T")[0] : "",
+    });
+    setOfferDialogOpen(true);
+  };
+
   const openCreateEvent = () => {
     setEditingEvent(null);
     setEventImageUrl("");
@@ -140,6 +162,20 @@ export default function OffersPage() {
     setEventDialogOpen(true);
   };
 
+  const openEditEvent = (event: any) => {
+    setEditingEvent(event);
+    setEventImageUrl(event.image_url || "");
+    setFormError(null);
+    eventForm.reset({
+      title: event.title,
+      description: event.description,
+      location: event.location || "الفرع الرئيسي",
+      cafe_id: event.cafe_id,
+      event_date: event.event_date ? new Date(event.event_date).toISOString().slice(0, 16) : "",
+    });
+    setEventDialogOpen(true);
+  };
+
   const handleOfferFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -147,8 +183,10 @@ export default function OffersPage() {
     try {
       const res = await uploadApi.uploadImage(file);
       setOfferImageUrl(res.url);
+      toast({ title: "تم بنجاح", description: "تم رفع صورة العرض بنجاح" });
     } catch (err) {
       console.error("Offer upload failed", err);
+      toast({ title: "خطأ", description: "فشل رفع صورة العرض", variant: "destructive" });
     } finally {
       setUploadingOfferImg(false);
     }
@@ -161,8 +199,10 @@ export default function OffersPage() {
     try {
       const res = await uploadApi.uploadImage(file);
       setEventImageUrl(res.url);
+      toast({ title: "تم بنجاح", description: "تم رفع صورة الفعالية بنجاح" });
     } catch (err) {
       console.error("Event upload failed", err);
+      toast({ title: "خطأ", description: "فشل رفع صورة الفعالية", variant: "destructive" });
     } finally {
       setUploadingEventImg(false);
     }
@@ -191,6 +231,8 @@ export default function OffersPage() {
           setOfferDialogOpen(false);
           setEditingOffer(null);
           queryClient.invalidateQueries({ queryKey: ["offers"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({ title: "تم بنجاح", description: "تم تعديل العرض بنجاح" });
         },
         onError: (err: any) => {
           setFormError(err?.response?.data?.message || "حدث خطأ أثناء تعديل العرض");
@@ -201,6 +243,8 @@ export default function OffersPage() {
         onSuccess: () => {
           setOfferDialogOpen(false);
           queryClient.invalidateQueries({ queryKey: ["offers"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({ title: "تم بنجاح", description: "تمت إضافة العرض بنجاح" });
         },
         onError: (err: any) => {
           setFormError(err?.response?.data?.message || "حدث خطأ أثناء إضافة العرض");
@@ -231,6 +275,8 @@ export default function OffersPage() {
           setEventDialogOpen(false);
           setEditingEvent(null);
           queryClient.invalidateQueries({ queryKey: ["events"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({ title: "تم بنجاح", description: "تم تعديل الفعالية بنجاح" });
         },
         onError: (err: any) => {
           setFormError(err?.response?.data?.message || "حدث خطأ أثناء تعديل الفعالية");
@@ -241,6 +287,8 @@ export default function OffersPage() {
         onSuccess: () => {
           setEventDialogOpen(false);
           queryClient.invalidateQueries({ queryKey: ["events"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({ title: "تم بنجاح", description: "تمت إضافة الفعالية بنجاح" });
         },
         onError: (err: any) => {
           setFormError(err?.response?.data?.message || "حدث خطأ أثناء إضافة الفعالية");
@@ -249,77 +297,72 @@ export default function OffersPage() {
     }
   };
 
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "OFFER") {
+      deleteOffer.mutate(deleteTarget.id, {
+        onSuccess: () => {
+          setDeleteTarget(null);
+          queryClient.invalidateQueries({ queryKey: ["offers"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({ title: "تم بنجاح", description: "تم حذف العرض بنجاح" });
+        },
+        onError: (err: any) => {
+          toast({ title: "خطأ", description: err?.response?.data?.message || "فشل حذف العرض", variant: "destructive" });
+        },
+      });
+    } else if (deleteTarget.type === "EVENT") {
+      deleteEvent.mutate(deleteTarget.id, {
+        onSuccess: () => {
+          setDeleteTarget(null);
+          queryClient.invalidateQueries({ queryKey: ["events"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({ title: "تم بنجاح", description: "تم حذف الفعالية بنجاح" });
+        },
+        onError: (err: any) => {
+          toast({ title: "خطأ", description: err?.response?.data?.message || "فشل حذف الفعالية", variant: "destructive" });
+        },
+      });
+    }
+  };
 
   return (
     <div className="space-y-8 pb-12 font-sans" dir="rtl" style={{ fontFamily: "Almarai, sans-serif" }}>
-      {/* 1. Offers Section matching Offers and events.png */}
+      {/* 1. Offers Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-extrabold text-[#2F2D29]">إدارة العروض</h2>
           <button
             onClick={openCreateOffer}
-            className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95"
+            className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5"
           >
-            إضافة عرض
+            <Plus size={16} />
+            <span>إضافة عرض</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {offers.length === 0 ? (
-            <>
-              {/* Sample Card 1 matching Figma */}
-              <div className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#FAF8F5] border border-[#EAE6DF] flex-shrink-0">
-                    <img
-                      src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400&auto=format&fit=crop&q=80"
-                      alt="مقهى سيلانترو"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <h3 className="text-sm font-extrabold text-[#2F2D29]">مقهى سيلانترو</h3>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ البداية: 30/10/2025</p>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ النهاية: 1/12/2025</p>
-                    <p className="text-[11px] text-[#2F2D29] font-bold">التوضيح: 2 قهوة سبريسو + واحد هدية</p>
-                  </div>
-                </div>
-                <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-1">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-
-              {/* Sample Card 2 matching Figma */}
-              <div className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#FAF8F5] border border-[#EAE6DF] flex-shrink-0">
-                    <img
-                      src="https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&auto=format&fit=crop&q=80"
-                      alt="مقهى كارييو"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <h3 className="text-sm font-extrabold text-[#2F2D29]">مقهى كارييو</h3>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ البداية: 30/10/2025</p>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ النهاية: 1/12/2025</p>
-                    <p className="text-[11px] text-[#2F2D29] font-bold">التوضيح: 2 قهوة باردة + واحد هدية</p>
-                  </div>
-                </div>
-                <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-1">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            </>
+          {offersLoading ? (
+            Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-5 border border-[#EAE6DF] animate-pulse h-28" />
+            ))
+          ) : offers.length === 0 ? (
+            <div className="col-span-2 bg-white rounded-2xl p-8 border border-[#EAE6DF] text-center">
+              <Tag className="w-10 h-10 text-[#BA9B65]/40 mx-auto mb-2" />
+              <p className="text-sm font-bold text-[#8A7A5C]">لا توجد عروض مسجلة حالياً</p>
+            </div>
           ) : (
             offers.map((offer) => (
               <div key={offer.id} className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#FAF8F5] border border-[#EAE6DF] flex-shrink-0">
                     <img
-                      src={getImageUrl(offer.image_url) || "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400&auto=format&fit=crop&q=80"}
+                      src={offer.image_url ? getImageUrl(offer.image_url) : "/resources/Cafe.png"}
                       alt={offer.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/resources/Cafe.png";
+                      }}
                     />
                   </div>
                   <div className="space-y-1 text-right">
@@ -329,83 +372,69 @@ export default function OffersPage() {
                     <p className="text-[11px] text-[#2F2D29] font-bold">التوضيح: {offer.description}</p>
                   </div>
                 </div>
-                <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-1">
-                  <MoreVertical size={16} />
-                </button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-2 rounded-lg hover:bg-[#FAF8F5] cursor-pointer">
+                      <MoreVertical size={16} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="text-right">
+                    <DropdownMenuItem onClick={() => setSelectedViewOffer(offer)} className="cursor-pointer">
+                      عرض التفاصيل
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEditOffer(offer)} className="cursor-pointer">
+                      تعديل
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setDeleteTarget({ type: "OFFER", id: offer.id, title: offer.title })}
+                      className="text-red-600 focus:text-red-600 cursor-pointer"
+                    >
+                      حذف
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* 2. Events Section matching Offers and events.png */}
+      {/* 2. Events Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-extrabold text-[#2F2D29]">إدارة الفعاليات</h2>
           <button
             onClick={openCreateEvent}
-            className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95"
+            className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5"
           >
-            إضافة فعالية
+            <Plus size={16} />
+            <span>إضافة فعالية</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {events.length === 0 ? (
-            <>
-              {/* Sample Event 1 matching Figma */}
-              <div className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#FAF8F5] border border-[#EAE6DF] flex-shrink-0">
-                    <img
-                      src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&auto=format&fit=crop&q=80"
-                      alt="أسم الفعالية"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <h3 className="text-sm font-extrabold text-[#2F2D29]">أسم الفعالية</h3>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ البداية: 30/10/2025</p>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ النهاية: 1/12/2025</p>
-                    <p className="text-[11px] text-[#2F2D29] font-bold">التوضيح: مناسبة عيد ميلاد</p>
-                  </div>
-                </div>
-                <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-1">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-
-              {/* Sample Event 2 matching Figma */}
-              <div className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#FAF8F5] border border-[#EAE6DF] flex-shrink-0">
-                    <img
-                      src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&auto=format&fit=crop&q=80"
-                      alt="أسم الفعالية"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <h3 className="text-sm font-extrabold text-[#2F2D29]">أسم الفعالية</h3>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ البداية: 30/10/2025</p>
-                    <p className="text-[11px] text-[#8A7A5C] font-semibold">تاريخ النهاية: 1/12/2025</p>
-                    <p className="text-[11px] text-[#2F2D29] font-bold">التوضيح: مناسبة عيد ميلاد</p>
-                  </div>
-                </div>
-                <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-1">
-                  <MoreVertical size={16} />
-                </button>
-              </div>
-            </>
+          {eventsLoading ? (
+            Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-5 border border-[#EAE6DF] animate-pulse h-28" />
+            ))
+          ) : events.length === 0 ? (
+            <div className="col-span-2 bg-white rounded-2xl p-8 border border-[#EAE6DF] text-center">
+              <Calendar className="w-10 h-10 text-[#BA9B65]/40 mx-auto mb-2" />
+              <p className="text-sm font-bold text-[#8A7A5C]">لا توجد فعاليات مسجلة حالياً</p>
+            </div>
           ) : (
             events.map((event) => (
               <div key={event.id} className="bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-28 h-20 rounded-xl overflow-hidden bg-[#FAF8F5] border border-[#EAE6DF] flex-shrink-0">
                     <img
-                      src={getImageUrl(event.image_url) || "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&auto=format&fit=crop&q=80"}
+                      src={event.image_url ? getImageUrl(event.image_url) : "/resources/Cafe-1.png"}
                       alt={event.title}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/resources/Cafe-1.png";
+                      }}
                     />
                   </div>
                   <div className="space-y-1 text-right">
@@ -414,108 +443,242 @@ export default function OffersPage() {
                     <p className="text-[11px] text-[#2F2D29] font-bold">التوضيح: {event.description}</p>
                   </div>
                 </div>
-                <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-1">
-                  <MoreVertical size={16} />
-                </button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="text-[#8A7A5C] hover:text-[#2F2D29] p-2 rounded-lg hover:bg-[#FAF8F5] cursor-pointer">
+                      <MoreVertical size={16} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="text-right">
+                    <DropdownMenuItem onClick={() => setSelectedViewEvent(event)} className="cursor-pointer">
+                      عرض التفاصيل
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEditEvent(event)} className="cursor-pointer">
+                      تعديل
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setDeleteTarget({ type: "EVENT", id: event.id, title: event.title })}
+                      className="text-red-600 focus:text-red-600 cursor-pointer"
+                    >
+                      حذف
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* Add Offer Dialog matching Add Offer.png */}
-      <Dialog open={offerDialogOpen} onOpenChange={(open) => !open && setOfferDialogOpen(false)}>
+      {/* View Offer Details Dialog */}
+      <Dialog open={!!selectedViewOffer} onOpenChange={(open) => !open && setSelectedViewOffer(null)}>
         <DialogContent className="sm:max-w-md bg-white text-[#2F2D29] rounded-3xl p-6 border border-[#EAE6DF] shadow-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-extrabold text-[#2F2D29] text-right mb-4">
+            <DialogTitle className="text-xl font-extrabold text-[#2F2D29] text-right mb-2">
+              تفاصيل العرض: {selectedViewOffer?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedViewOffer?.image_url && (
+              <img
+                src={getImageUrl(selectedViewOffer.image_url)}
+                alt={selectedViewOffer.title}
+                className="w-full h-44 object-cover rounded-2xl"
+              />
+            )}
+            <div className="space-y-2 bg-[#FAF8F5] p-4 rounded-2xl border border-[#EAE6DF]">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#8A7A5C] font-bold">نسبة الخصم:</span>
+                <span className="font-extrabold text-[#BA9B65]">{selectedViewOffer?.discount_percentage}%</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#8A7A5C] font-bold">تاريخ البداية:</span>
+                <span className="font-extrabold text-[#2F2D29]">
+                  {selectedViewOffer?.start_date ? new Date(selectedViewOffer.start_date).toLocaleDateString("ar-SA") : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#8A7A5C] font-bold">تاريخ النهاية:</span>
+                <span className="font-extrabold text-[#2F2D29]">
+                  {selectedViewOffer?.end_date ? new Date(selectedViewOffer.end_date).toLocaleDateString("ar-SA") : "-"}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-[#8A7A5C]">التوضيح:</Label>
+              <p className="text-xs text-[#2F2D29] leading-relaxed p-3 bg-white border border-[#EAE6DF] rounded-xl">
+                {selectedViewOffer?.description || "لا يوجد توضيح"}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedViewOffer(null)}
+              className="border-[#E5E0D8] text-[#2F2D29] font-bold rounded-xl"
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Event Details Dialog */}
+      <Dialog open={!!selectedViewEvent} onOpenChange={(open) => !open && setSelectedViewEvent(null)}>
+        <DialogContent className="sm:max-w-md bg-white text-[#2F2D29] rounded-3xl p-6 border border-[#EAE6DF] shadow-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold text-[#2F2D29] text-right mb-2">
+              تفاصيل الفعالية: {selectedViewEvent?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedViewEvent?.image_url && (
+              <img
+                src={getImageUrl(selectedViewEvent.image_url)}
+                alt={selectedViewEvent.title}
+                className="w-full h-44 object-cover rounded-2xl"
+              />
+            )}
+            <div className="space-y-2 bg-[#FAF8F5] p-4 rounded-2xl border border-[#EAE6DF]">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#8A7A5C] font-bold">تاريخ الفعالية:</span>
+                <span className="font-extrabold text-[#2F2D29]">
+                  {selectedViewEvent?.event_date ? new Date(selectedViewEvent.event_date).toLocaleString("ar-SA") : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-[#8A7A5C] font-bold">الموقع:</span>
+                <span className="font-extrabold text-[#2F2D29]">{selectedViewEvent?.location || "الفرع الرئيسي"}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-[#8A7A5C]">الوصف:</Label>
+              <p className="text-xs text-[#2F2D29] leading-relaxed p-3 bg-white border border-[#EAE6DF] rounded-xl">
+                {selectedViewEvent?.description || "لا يوجد وصف"}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedViewEvent(null)}
+              className="border-[#E5E0D8] text-[#2F2D29] font-bold rounded-xl"
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add / Edit Offer Dialog */}
+      <Dialog open={offerDialogOpen} onOpenChange={(open) => !open && setOfferDialogOpen(false)}>
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-y-auto bg-white text-[#2F2D29] rounded-3xl p-6 sm:p-7 border border-[#EAE6DF] shadow-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-extrabold text-[#2F2D29] text-right mb-1">
               {editingOffer ? "تعديل العرض" : "إضافة عرض"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={offerForm.handleSubmit(handleOfferSubmit, (err) => { console.warn("Validation error:", err); setFormError("يرجى ملء جميع الحقول المطلوبة بشكل صحيح"); })} className="space-y-4">
+          <form onSubmit={offerForm.handleSubmit(handleOfferSubmit, (err) => { console.warn("Validation error:", err); setFormError("يرجى ملء جميع الحقول المطلوبة بشكل صحيح"); })} className="space-y-4 pt-1">
             {formError && (
-              <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl">
+              <div className="p-2.5 bg-red-50 text-red-700 text-xs font-bold rounded-xl">
                 {formError}
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">المقهى</Label>
-              <select
-                {...offerForm.register("cafe_id")}
-                className="w-full h-11 rounded-xl border border-[#E5E0D8] bg-white px-3 text-sm text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]"
-              >
-                <option value="">اختر المقهى</option>
-                {cafes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Column 1: Offer Details */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">عنوان العرض</Label>
+                  <Input {...offerForm.register("title")} placeholder="مثال: خصم 20% على القهوة المقطرة" className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70" required />
+                </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">صورة العرض</Label>
-              <input
-                type="file"
-                ref={offerFileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleOfferFileUpload}
-              />
-              <div
-                onClick={() => offerFileInputRef.current?.click()}
-                className="border-2 border-dashed border-[#E5E0D8] rounded-2xl p-4 text-center hover:border-[#BA9B65] transition-colors cursor-pointer bg-white"
-              >
-                {offerImageUrl ? (
-                  <div className="space-y-2">
-                    <img src={getImageUrl(offerImageUrl)} alt="Offer Preview" className="h-20 w-auto rounded-lg mx-auto object-cover" />
-                    <p className="text-xs text-[#8A7A5C] font-bold">اضغط لتغيير الصورة</p>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">المقهى</Label>
+                  <select
+                    {...offerForm.register("cafe_id")}
+                    className="w-full h-10 rounded-xl border border-[#E5E0D8] bg-white px-3 text-xs text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]"
+                  >
+                    <option value="">اختر المقهى</option>
+                    {cafes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} {c.address ? `(${c.address})` : ""}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-[#2F2D29]">بداية العرض</Label>
+                    <Input type="date" {...offerForm.register("start_date")} className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29]" required />
                   </div>
-                ) : uploadingOfferImg ? (
-                  <div className="flex items-center justify-center gap-2 py-4">
-                    <LoaderCircle className="animate-spin text-[#BA9B65]" size={20} />
-                    <span className="text-xs font-bold text-[#8A7A5C]">جاري رفع الصورة...</span>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-[#2F2D29]">نهاية العرض</Label>
+                    <Input type="date" {...offerForm.register("end_date")} className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29]" required />
                   </div>
-                ) : (
-                  <div>
-                    <Plus className="h-6 w-6 mx-auto text-[#BA9B65] mb-2" />
-                    <p className="text-xs font-bold text-[#8A7A5C]">اضغط هنا لرفع الصورة</p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">نسبة الخصم (%)</Label>
+                  <Input type="number" {...offerForm.register("discount_percentage")} className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29]" />
+                </div>
+              </div>
+
+              {/* Column 2: Image & Description */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">صورة العرض</Label>
+                  <input
+                    type="file"
+                    ref={offerFileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleOfferFileUpload}
+                  />
+                  <div
+                    onClick={() => offerFileInputRef.current?.click()}
+                    className="border-2 border-dashed border-[#E5E0D8] rounded-xl p-3 text-center hover:border-[#BA9B65] transition-colors cursor-pointer bg-[#FAF8F5]/60 min-h-[90px] flex items-center justify-center"
+                  >
+                    {offerImageUrl ? (
+                      <div className="space-y-1 py-1">
+                        <img src={getImageUrl(offerImageUrl)} alt="Offer Preview" className="h-14 w-auto rounded-lg mx-auto object-cover" />
+                        <p className="text-[10px] text-[#8A7A5C] font-bold">اضغط لتغيير الصورة</p>
+                      </div>
+                    ) : uploadingOfferImg ? (
+                      <div className="flex items-center justify-center gap-2 py-2">
+                        <LoaderCircle className="animate-spin text-[#BA9B65]" size={16} />
+                        <span className="text-xs font-bold text-[#8A7A5C]">جاري رفع الصورة...</span>
+                      </div>
+                    ) : (
+                      <div className="py-1">
+                        <Plus className="h-5 w-5 mx-auto text-[#BA9B65] mb-1" />
+                        <p className="text-xs font-bold text-[#8A7A5C]">اضغط لرفع صورة العرض</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">نص توضيحي</Label>
+                  <textarea {...offerForm.register("description")} placeholder="اكتب تفاصيل العرض هنا..." rows={4} className="w-full p-2.5 rounded-xl border border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70 resize-none focus:outline-none focus:border-[#BA9B65]" required />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">عنوان العرض</Label>
-              <Input {...offerForm.register("title")} placeholder="مثال: خصم 20% على جميع أنواع القهوة" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29] placeholder:text-[#8A7A5C]/70" required />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-[#2F2D29]">تاريخ بداية العرض</Label>
-                <Input type="date" {...offerForm.register("start_date")} className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29]" required />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-[#2F2D29]">تاريخ نهاية العرض</Label>
-                <Input type="date" {...offerForm.register("end_date")} className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29]" required />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">نص توضيحي</Label>
-              <textarea {...offerForm.register("description")} placeholder="2 قهوة سبريسو + واحد هدية" rows={3} className="w-full p-3 rounded-xl border border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70 resize-none focus:outline-none focus:border-[#BA9B65]" required />
-            </div>
-
-            <div className="flex items-center gap-3 pt-4">
+            <div className="flex items-center gap-3 pt-3 border-t border-[#F0ECE4]">
               <Button
                 type="submit"
                 disabled={createOffer.isPending || updateOffer.isPending}
-                className="flex-1 h-11 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold rounded-xl shadow-xs"
+                className="flex-1 h-10 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold rounded-xl shadow-xs cursor-pointer text-sm"
               >
-                {createOffer.isPending || updateOffer.isPending ? "جاري الحفظ..." : "إضافة"}
+                {createOffer.isPending || updateOffer.isPending ? "جاري الحفظ..." : "حفظ العرض"}
               </Button>
               <Button
                 type="button"
                 onClick={() => setOfferDialogOpen(false)}
-                className="flex-1 h-11 bg-[#BA9B65]/15 hover:bg-[#BA9B65] text-[#7A5C28] hover:text-white border border-[#BA9B65] font-bold rounded-xl transition-all shadow-xs"
+                className="flex-1 h-10 border-[#E5E0D8] text-[#2F2D29] font-bold rounded-xl cursor-pointer text-sm"
               >
                 إلغاء
               </Button>
@@ -524,99 +687,106 @@ export default function OffersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Event Dialog matching Add Event.png */}
+      {/* Add / Edit Event Dialog */}
       <Dialog open={eventDialogOpen} onOpenChange={(open) => !open && setEventDialogOpen(false)}>
-        <DialogContent className="sm:max-w-md bg-white text-[#2F2D29] rounded-3xl p-6 border border-[#EAE6DF] shadow-2xl" dir="rtl">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-y-auto bg-white text-[#2F2D29] rounded-3xl p-6 sm:p-7 border border-[#EAE6DF] shadow-2xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-extrabold text-[#2F2D29] text-right mb-4">
+            <DialogTitle className="text-xl sm:text-2xl font-extrabold text-[#2F2D29] text-right mb-1">
               {editingEvent ? "تعديل الفعالية" : "إضافة فعالية"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={eventForm.handleSubmit(handleEventSubmit, (err) => { console.warn("Validation error:", err); setFormError("يرجى ملء جميع الحقول المطلوبة بشكل صحيح"); })} className="space-y-4">
+          <form onSubmit={eventForm.handleSubmit(handleEventSubmit, (err) => { console.warn("Validation error:", err); setFormError("يرجى ملء جميع الحقول المطلوبة بشكل صحيح"); })} className="space-y-4 pt-1">
             {formError && (
-              <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl">
+              <div className="p-2.5 bg-red-50 text-red-700 text-xs font-bold rounded-xl">
                 {formError}
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">المقهى</Label>
-              <select
-                {...eventForm.register("cafe_id")}
-                className="w-full h-11 rounded-xl border border-[#E5E0D8] bg-white px-3 text-sm text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]"
-              >
-                <option value="">اختر المقهى</option>
-                {cafes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Column 1: Event Details */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">اسم الفعالية</Label>
+                  <Input {...eventForm.register("title")} placeholder="مثال: بطولة الباريستا للاتيه آرت" className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70" required />
+                </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">صورة الفعالية</Label>
-              <input
-                type="file"
-                ref={eventFileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleEventFileUpload}
-              />
-              <div
-                onClick={() => eventFileInputRef.current?.click()}
-                className="border-2 border-dashed border-[#E5E0D8] rounded-2xl p-4 text-center hover:border-[#BA9B65] transition-colors cursor-pointer bg-white"
-              >
-                {eventImageUrl ? (
-                  <div className="space-y-2">
-                    <img src={getImageUrl(eventImageUrl)} alt="Event Preview" className="h-20 w-auto rounded-lg mx-auto object-cover" />
-                    <p className="text-xs text-[#8A7A5C] font-bold">اضغط لتغيير الصورة</p>
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">المقهى</Label>
+                  <select
+                    {...eventForm.register("cafe_id")}
+                    className="w-full h-10 rounded-xl border border-[#E5E0D8] bg-white px-3 text-xs text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]"
+                  >
+                    <option value="">اختر المقهى</option>
+                    {cafes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} {c.address ? `(${c.address})` : ""}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">تاريخ ووقت الفعالية</Label>
+                  <Input type="datetime-local" {...eventForm.register("event_date")} className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29]" required />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">الموقع</Label>
+                  <Input {...eventForm.register("location")} placeholder="الفرع الرئيسي" className="h-10 rounded-xl border-[#E5E0D8] bg-white text-xs text-[#2F2D29]" />
+                </div>
+              </div>
+
+              {/* Column 2: Image & Description */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">صورة الفعالية</Label>
+                  <input
+                    type="file"
+                    ref={eventFileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleEventFileUpload}
+                  />
+                  <div
+                    onClick={() => eventFileInputRef.current?.click()}
+                    className="border-2 border-dashed border-[#E5E0D8] rounded-xl p-3 text-center hover:border-[#BA9B65] transition-colors cursor-pointer bg-[#FAF8F5]/60 min-h-[90px] flex items-center justify-center"
+                  >
+                    {eventImageUrl ? (
+                      <div className="space-y-1 py-1">
+                        <img src={getImageUrl(eventImageUrl)} alt="Event Preview" className="h-14 w-auto rounded-lg mx-auto object-cover" />
+                        <p className="text-[10px] text-[#8A7A5C] font-bold">اضغط لتغيير الصورة</p>
+                      </div>
+                    ) : uploadingEventImg ? (
+                      <div className="flex items-center justify-center gap-2 py-2">
+                        <LoaderCircle className="animate-spin text-[#BA9B65]" size={16} />
+                        <span className="text-xs font-bold text-[#8A7A5C]">جاري رفع الصورة...</span>
+                      </div>
+                    ) : (
+                      <div className="py-1">
+                        <Plus className="h-5 w-5 mx-auto text-[#BA9B65] mb-1" />
+                        <p className="text-xs font-bold text-[#8A7A5C]">اضغط لرفع صورة الفعالية</p>
+                      </div>
+                    )}
                   </div>
-                ) : uploadingEventImg ? (
-                  <div className="flex items-center justify-center gap-2 py-4">
-                    <LoaderCircle className="animate-spin text-[#BA9B65]" size={20} />
-                    <span className="text-xs font-bold text-[#8A7A5C]">جاري رفع الصورة...</span>
-                  </div>
-                ) : (
-                  <div>
-                    <Plus className="h-6 w-6 mx-auto text-[#BA9B65] mb-2" />
-                    <p className="text-xs font-bold text-[#8A7A5C]">اضغط هنا لرفع الصورة</p>
-                  </div>
-                )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-bold text-[#2F2D29]">الوصف</Label>
+                  <textarea {...eventForm.register("description")} placeholder="تفاصيل الفعالية..." rows={4} className="w-full p-2.5 rounded-xl border border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70 resize-none focus:outline-none focus:border-[#BA9B65]" required />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">اسم الفعالية</Label>
-              <Input {...eventForm.register("title")} placeholder="مثال: بطولة الباريستا للاتيه آرت" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29] placeholder:text-[#8A7A5C]/70" required />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-[#2F2D29]">تاريخ بداية الفعالية</Label>
-                <Input type="date" {...eventForm.register("event_date")} className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29]" required />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-[#2F2D29]">الموقع</Label>
-                <Input {...eventForm.register("location")} placeholder="الفرع الرئيسي" className="h-11 rounded-xl border-[#E5E0D8] bg-white text-[#2F2D29]" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">نص توضيحي</Label>
-              <textarea {...eventForm.register("description")} placeholder="تفاصيل الفعالية..." rows={3} className="w-full p-3 rounded-xl border border-[#E5E0D8] bg-white text-xs text-[#2F2D29] placeholder:text-[#8A7A5C]/70 resize-none focus:outline-none focus:border-[#BA9B65]" required />
-            </div>
-
-            <div className="flex items-center gap-3 pt-4">
+            <div className="flex items-center gap-3 pt-3 border-t border-[#F0ECE4]">
               <Button
                 type="submit"
                 disabled={createEvent.isPending || updateEvent.isPending}
-                className="flex-1 h-11 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold rounded-xl shadow-xs"
+                className="flex-1 h-10 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold rounded-xl shadow-xs cursor-pointer text-sm"
               >
-                {createEvent.isPending || updateEvent.isPending ? "جاري الحفظ..." : "إضافة"}
+                {createEvent.isPending || updateEvent.isPending ? "جاري الحفظ..." : "حفظ الفعالية"}
               </Button>
               <Button
                 type="button"
                 onClick={() => setEventDialogOpen(false)}
-                className="flex-1 h-11 bg-[#BA9B65]/15 hover:bg-[#BA9B65] text-[#7A5C28] hover:text-white border border-[#BA9B65] font-bold rounded-xl transition-all shadow-xs"
+                className="flex-1 h-10 border-[#E5E0D8] text-[#2F2D29] font-bold rounded-xl cursor-pointer text-sm"
               >
                 إلغاء
               </Button>
@@ -624,6 +794,18 @@ export default function OffersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={deleteTarget?.type === "OFFER" ? "حذف العرض" : "حذف الفعالية"}
+        description={`هل أنت متأكد من حذف "${deleteTarget?.title}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        variant="destructive"
+        onConfirm={handleDelete}
+        isLoading={deleteOffer.isPending || deleteEvent.isPending}
+      />
     </div>
   );
 }

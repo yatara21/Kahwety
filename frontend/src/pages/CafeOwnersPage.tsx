@@ -57,7 +57,7 @@ export default function CafeOwnersPage() {
   const inactiveCount = owners.filter((u) => u.status === "INACTIVE").length;
   const suspendedCount = owners.filter((u) => u.status === "SUSPENDED").length;
 
-  const cafeCountParams = { page_size: 1000 };
+  const cafeCountParams = { page_size: 100 };
   const { data: cafeData } = useCafes(cafeCountParams);
   const allCafes = cafeData?.items || [];
 

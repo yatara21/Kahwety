@@ -10,6 +10,8 @@ export const couponsApi = {
     api.post<Coupon>("/coupons", data),
   update: (id: string, data: any) =>
     api.put<Coupon>(`/coupons/${id}`, data),
+  terminate: (id: string) =>
+    api.post<Coupon>(`/coupons/${id}/terminate`),
   delete: (id: string) =>
     api.delete(`/coupons/${id}`),
 };

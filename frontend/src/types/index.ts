@@ -222,15 +222,19 @@ export interface Coupon {
   id: string;
   code: string;
   discount_percent: number;
-  plan_id: string | null;
+  plan_id?: string | null;
   max_uses: number;
   used_count: number;
   start_date: string;
   end_date: string;
   is_active: boolean;
+  status?: "ACTIVE" | "EXPIRED" | "TERMINATED" | string;
   created_at: string;
   updated_at: string;
-  plan?: SubscriptionPlan;
+  plan?: {
+    id: string;
+    name: string;
+  } | SubscriptionPlan | null;
 }
 
 export type NotificationTargetType = "ALL" | "CUSTOMER" | "CAFE_OWNER" | "CAFE" | "USER";
@@ -279,6 +283,7 @@ export interface DashboardStats {
     cafe_subscribers: number;
     pending_complaints: number;
     resolved_complaints: number;
+    open_complaints?: number;
     suggested_cafes: number;
     subscription_revenue: number;
   };
@@ -290,6 +295,7 @@ export interface DashboardStats {
     recent_alerts?: string[];
   };
 }
+
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -304,3 +310,4 @@ export interface ApiResponse<T> {
   data: T;
   meta?: Record<string, unknown>;
 }
+

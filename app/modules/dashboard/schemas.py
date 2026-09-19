@@ -21,8 +21,10 @@ class DashboardCounts(BaseModel):
     cafe_subscribers: int
     pending_complaints: int
     resolved_complaints: int
+    open_complaints: int = 0
     suggested_cafes: int
     subscription_revenue: float
+
 
 
 class CityStat(BaseModel):

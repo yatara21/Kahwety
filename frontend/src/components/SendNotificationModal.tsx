@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notificationsApi } from "@/api/notifications";
 import { NotificationTargetType } from "@/types";
+import { useCafes } from "@/hooks/useCafes";
+import { toast } from "@/hooks/use-toast";
 
 interface SendNotificationModalProps {
   isOpen: boolean;
@@ -17,13 +19,15 @@ export function SendNotificationModal({
   onClose,
   onSuccess,
 }: SendNotificationModalProps) {
-  const [targetType, setTargetType] = useState<string>("CUSTOMER");
-  const [targetName, setTargetName] = useState<string>("");
+  const [targetType, setTargetType] = useState<string>("ALL");
+  const [targetId, setTargetId] = useState<string>("");
   const [title, setTitle] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [sendDate, setSendDate] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: cafesData } = useCafes({ page_size: 100 });
 
   if (!isOpen) return null;
 
@@ -34,6 +38,11 @@ export function SendNotificationModal({
       return;
     }
 
+    if ((targetType === "CAFE" || targetType === "USER") && !targetId.trim()) {
+      setError(targetType === "CAFE" ? "يرجى اختيار المقهى المستهدف" : "يرجى إدخال معرف المستخدم المستهدف");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -41,6 +50,11 @@ export function SendNotificationModal({
         title,
         message,
         target_type: targetType as NotificationTargetType,
+        target_id: (targetType === "CAFE" || targetType === "USER") ? targetId : undefined,
+      });
+      toast({
+        title: "تم بنجاح",
+        description: "تم إرسال الإشعار بنجاح",
       });
       onSuccess?.();
       onClose();
@@ -48,10 +62,16 @@ export function SendNotificationModal({
       setTitle("");
       setMessage("");
       setSendDate("");
-      setTargetName("");
+      setTargetId("");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setError(axiosErr.response?.data?.message || "حدث خطأ أثناء إرسال الإشعار");
+      const errMsg = axiosErr.response?.data?.message || "حدث خطأ أثناء إرسال الإشعار";
+      setError(errMsg);
+      toast({
+        title: "خطأ",
+        description: errMsg,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -87,21 +107,42 @@ export function SendNotificationModal({
               onChange={(e) => setTargetType(e.target.value)}
               className="w-full h-11 px-3.5 rounded-xl border border-[#E5E0D8] bg-white text-sm text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]"
             >
-              <option value="ALL">الجميع (كافة المستخدمين والمقاهي)</option>
-              <option value="CUSTOMER">العملاء</option>
-              <option value="CAFE_OWNER">أصحاب المقاهي</option>
-              <option value="CAFE">تاجر مقهى محدد</option>
+              <option value="ALL">الجميع (كافة العملاء وأصحاب المقاهي)</option>
+              <option value="CUSTOMER">العملاء فقط</option>
+              <option value="CAFE_OWNER">أصحاب المقاهي فقط</option>
+              <option value="CAFE">مقهى محدد</option>
+              <option value="USER">مستخدم محدد (بالمعرف)</option>
             </select>
           </div>
 
           {targetType === "CAFE" && (
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">اسم التاجر / المقهى</Label>
+              <Label className="text-xs font-bold text-[#2F2D29]">اختر المقهى المستهدف</Label>
+              <select
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                className="w-full h-11 px-3.5 rounded-xl border border-[#E5E0D8] bg-white text-sm text-[#2F2D29] focus:outline-none focus:border-[#BA9B65]"
+                required
+              >
+                <option value="">-- اختر المقهى --</option>
+                {cafesData?.items?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.address ? `(${c.address})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {targetType === "USER" && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#2F2D29]">معرف المستخدم (User ID)</Label>
               <Input
-                value={targetName}
-                onChange={(e) => setTargetName(e.target.value)}
-                placeholder="أدخل اسم التاجر أو المقهى"
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                placeholder="أدخل معرف المستخدم..."
                 className="h-11 rounded-xl border-[#E5E0D8] text-sm"
+                required
               />
             </div>
           )}

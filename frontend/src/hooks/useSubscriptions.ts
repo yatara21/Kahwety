@@ -41,6 +41,7 @@ export function useCreatePlan() {
     mutationFn: subscriptionsApi.createPlan,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscription-plans"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -52,6 +53,7 @@ export function useUpdatePlan() {
       subscriptionsApi.updatePlan(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscription-plans"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -62,6 +64,7 @@ export function useActivatePlan() {
     mutationFn: (id: string) => subscriptionsApi.activatePlan(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscription-plans"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -72,6 +75,7 @@ export function useDeactivatePlan() {
     mutationFn: (id: string) => subscriptionsApi.deactivatePlan(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscription-plans"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

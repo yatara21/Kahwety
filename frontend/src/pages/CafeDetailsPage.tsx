@@ -15,10 +15,88 @@ import {
   ChevronRight,
   ChevronDown,
   Loader2,
+  Clock,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useCafe, useApproveCafe, useRejectCafe } from "@/hooks/useCafes";
 import { Button } from "@/components/ui/button";
 import { getImageUrl } from "@/utils/imageUrl";
+import { toast } from "@/hooks/use-toast";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+
+function parseWorkingHours(wh?: Record<string, string> | null) {
+  if (!wh || typeof wh !== "object" || Object.keys(wh).length === 0) {
+    return null;
+  }
+
+  if (wh.daily || wh["يومياً"] || wh["طوال الأسبوع"]) {
+    const hours = wh.daily || wh["يومياً"] || wh["طوال الأسبوع"];
+    return [
+      { day: "طوال أيام الأسبوع", hours, isClosed: hours.includes("مغلق") },
+    ];
+  }
+
+  if (wh.weekdays || wh.weekends || wh["أيام العمل"] || wh["نهاية الأسبوع"]) {
+    const result = [];
+    if (wh.weekdays || wh["أيام العمل"]) {
+      const hours = wh.weekdays || wh["أيام العمل"];
+      result.push({
+        day: "أيام الأسبوع (الأحد - الخميس)",
+        hours,
+        isClosed: hours.includes("مغلق"),
+      });
+    }
+    if (wh.weekends || wh["نهاية الأسبوع"]) {
+      const hours = wh.weekends || wh["نهاية الأسبوع"];
+      result.push({
+        day: "نهاية الأسبوع (الجمعة - السبت)",
+        hours,
+        isClosed: hours.includes("مغلق"),
+      });
+    }
+    return result;
+  }
+
+  const daysList = [
+    { label: "السبت", keys: ["saturday", "السبت"] },
+    { label: "الأحد", keys: ["sunday", "الأحد"] },
+    { label: "الاثنين", keys: ["monday", "الاثنين", "الإثنين"] },
+    { label: "الثلاثاء", keys: ["tuesday", "الثلاثاء"] },
+    { label: "الأربعاء", keys: ["wednesday", "الأربعاء"] },
+    { label: "الخميس", keys: ["thursday", "الخميس"] },
+    { label: "الجمعة", keys: ["friday", "الجمعة"] },
+  ];
+
+  const parsedDays: { day: string; hours: string; isClosed: boolean }[] = [];
+  let foundAny = false;
+  for (const d of daysList) {
+    let hoursVal: string | undefined;
+    for (const k of d.keys) {
+      if (wh[k] || wh[k.toLowerCase()]) {
+        hoursVal = wh[k] || wh[k.toLowerCase()];
+        break;
+      }
+    }
+    if (hoursVal) {
+      foundAny = true;
+      parsedDays.push({
+        day: d.label,
+        hours: hoursVal,
+        isClosed: hoursVal.includes("مغلق"),
+      });
+    }
+  }
+
+  if (foundAny) {
+    return parsedDays;
+  }
+
+  return Object.entries(wh).map(([key, val]) => ({
+    day: key,
+    hours: String(val),
+    isClosed: String(val).includes("مغلق"),
+  }));
+}
 
 export default function CafeDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,13 +106,7 @@ export default function CafeDetailsPage() {
   const rejectCafe = useRejectCafe();
 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
-
-  const samplePhotos = [
-    "/resources/Cafe.png",
-    "/resources/Cafe-1.png",
-    "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&auto=format&fit=crop&q=80",
-  ];
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -60,14 +132,23 @@ export default function CafeDetailsPage() {
   // Contact button actions
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert("تم نسخ رابط صفحة المقهى بنجاح!");
+    toast({
+      title: "تم النسخ",
+      description: "تم نسخ رابط صفحة المقهى بنجاح!",
+    });
   };
 
   const handleOpenMap = () => {
     if (cafe.latitude && cafe.longitude) {
       window.open(`https://www.google.com/maps?q=${cafe.latitude},${cafe.longitude}`, "_blank");
-    } else {
+    } else if (cafe.address || cafe.name) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + " " + (cafe.address || ""))}`, "_blank");
+    } else {
+      toast({
+        title: "تنبيه",
+        description: "موقع المقهى الجغرافي غير متوفر",
+        variant: "destructive",
+      });
     }
   };
 
@@ -75,7 +156,11 @@ export default function CafeDetailsPage() {
     if (cafe.owner?.email) {
       window.location.href = `mailto:${cafe.owner.email}`;
     } else {
-      alert("البريد الإلكتروني لمسؤول المقهى غير مسجل حالياً");
+      toast({
+        title: "تنبيه",
+        description: "البريد الإلكتروني لمسؤول المقهى غير مسجل حالياً",
+        variant: "destructive",
+      });
     }
   };
 
@@ -83,32 +168,59 @@ export default function CafeDetailsPage() {
     if (cafe.owner?.phone) {
       window.location.href = `tel:${cafe.owner.phone}`;
     } else {
-      alert("رقم هاتف مسؤول المقهى غير مسجل حالياً");
+      toast({
+        title: "تنبيه",
+        description: "رقم هاتف مسؤول المقهى غير مسجل حالياً",
+        variant: "destructive",
+      });
     }
   };
 
-  // Parse working hours
-  const daysList = [
-    { label: "السبت", key: "saturday" },
-    { label: "الأحد", key: "sunday" },
-    { label: "الاثنين", key: "monday" },
-    { label: "الثلاثاء", key: "tuesday" },
-    { label: "الأربعاء", key: "wednesday" },
-    { label: "الخميس", key: "thursday" },
-    { label: "الجمعة", key: "friday" },
-  ];
+  const handleApprove = () => {
+    approveCafe.mutate(cafe.id, {
+      onSuccess: () => {
+        toast({
+          title: "تم الاعتماد",
+          description: `تم قبول واعتماد مقهى "${cafe.name}" بنجاح`,
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل اعتماد المقهى",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
-  const workingHoursDisplay = daysList.map((d) => {
-    const customHours = cafe.working_hours?.[d.key] || cafe.working_hours?.[d.label];
-    if (customHours) {
-      return { day: d.label, hours: customHours, isClosed: customHours.includes("مغلق") };
-    }
-    return {
-      day: d.label,
-      hours: d.label === "الجمعة" ? "مغلق" : "07:30 – 17:30",
-      isClosed: d.label === "الجمعة",
-    };
-  });
+  const handleConfirmReject = () => {
+    rejectCafe.mutate(cafe.id, {
+      onSuccess: () => {
+        setRejectConfirmOpen(false);
+        toast({
+          title: "تم الرفض",
+          description: `تم رفض مقهى "${cafe.name}"`,
+        });
+      },
+      onError: (err: any) => {
+        setRejectConfirmOpen(false);
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل رفض المقهى",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const workingHoursDisplay = parseWorkingHours(cafe.working_hours);
+
+  // Real photos from products
+  const realPhotos = (cafe.products || [])
+    .map((p) => p.image_url)
+    .filter((url): url is string => Boolean(url))
+    .map((url) => getImageUrl(url));
 
   return (
     <div className="space-y-6 pb-12 font-sans" dir="rtl" style={{ fontFamily: "Almarai, sans-serif" }}>
@@ -267,16 +379,16 @@ export default function CafeDetailsPage() {
             {isPending ? (
               <div className="flex items-center gap-3 w-full justify-end">
                 <button
-                  onClick={() => approveCafe.mutate(cafe.id)}
+                  onClick={handleApprove}
                   disabled={approveCafe.isPending}
-                  className="px-6 py-2 rounded-xl bg-[#2E7D32] hover:bg-[#1E5C22] text-white font-bold text-sm shadow-xs transition-all active:scale-95"
+                  className="px-6 py-2 rounded-xl bg-[#2E7D32] hover:bg-[#1E5C22] text-white font-bold text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
                 >
                   {approveCafe.isPending ? "جاري الاعتماد..." : "قبول"}
                 </button>
                 <button
-                  onClick={() => rejectCafe.mutate(cafe.id)}
+                  onClick={() => setRejectConfirmOpen(true)}
                   disabled={rejectCafe.isPending}
-                  className="px-6 py-2 rounded-xl bg-[#C93B2B] hover:bg-[#A82E20] text-white font-bold text-sm shadow-xs transition-all active:scale-95"
+                  className="px-6 py-2 rounded-xl bg-[#C93B2B] hover:bg-[#A82E20] text-white font-bold text-sm shadow-xs transition-all active:scale-95 cursor-pointer"
                 >
                   {rejectCafe.isPending ? "جاري الرفض..." : "رفض"}
                 </button>
@@ -340,58 +452,92 @@ export default function CafeDetailsPage() {
         {/* Column 2: Working Hours Table */}
         <div className="lg:col-span-4 bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex flex-col justify-between">
           <h3 className="text-lg font-bold text-[#2F2D29] mb-4 text-center">مواعيد المقهى</h3>
-          <div className="divide-y divide-[#F0ECE4] text-sm font-bold">
-            {workingHoursDisplay.map((wh) => (
-              <div key={wh.day} className="py-2.5 flex items-center justify-between">
-                <span className="text-[#2F2D29]">{wh.day}</span>
-                <span className={wh.isClosed ? "text-[#C93B2B]" : "text-[#7A746B]"}>
-                  {wh.hours}
-                </span>
-              </div>
-            ))}
-          </div>
+          {workingHoursDisplay && workingHoursDisplay.length > 0 ? (
+            <div className="divide-y divide-[#F0ECE4] text-sm font-bold">
+              {workingHoursDisplay.map((wh) => (
+                <div key={wh.day} className="py-2.5 flex items-center justify-between">
+                  <span className="text-[#2F2D29]">{wh.day}</span>
+                  <span className={wh.isClosed ? "text-[#C93B2B]" : "text-[#7A746B]"}>
+                    {wh.hours}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+              <Clock size={32} className="text-[#BA9B65]/40 mb-2" />
+              <p className="text-xs font-bold text-[#8A7A5C]">لم يتم تحديد مواعيد العمل لهذا المقهى</p>
+            </div>
+          )}
         </div>
 
         {/* Column 3: Cafe Photos Carousel */}
         <div className="lg:col-span-4 bg-white rounded-2xl p-5 border border-[#EAE6DF] shadow-xs flex flex-col justify-between">
           <h3 className="text-lg font-bold text-[#2F2D29] mb-4 text-center">صور المقهى</h3>
-          <div className="relative rounded-2xl overflow-hidden border border-[#EAE6DF] h-64 bg-[#FAF8F5] flex items-center justify-center">
-            <img
-              src={samplePhotos[selectedPhotoIndex]}
-              alt="صورة المقهى"
-              className="w-full h-full object-cover transition-all duration-300"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop&q=80";
-              }}
-            />
-            {/* Left arrow */}
-            <button
-              onClick={() => setSelectedPhotoIndex((prev) => (prev > 0 ? prev - 1 : samplePhotos.length - 1))}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#2F2D29] hover:bg-white shadow-sm transition-all cursor-pointer"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            {/* Right arrow */}
-            <button
-              onClick={() => setSelectedPhotoIndex((prev) => (prev < samplePhotos.length - 1 ? prev + 1 : 0))}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#2F2D29] hover:bg-white shadow-sm transition-all cursor-pointer"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-          <div className="flex items-center justify-center gap-1.5 pt-3">
-            {samplePhotos.map((_, i) => (
-              <span
-                key={i}
-                onClick={() => setSelectedPhotoIndex(i)}
-                className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
-                  selectedPhotoIndex === i ? "bg-[#BA9B65] w-4" : "bg-[#E5E0D8]"
-                }`}
-              />
-            ))}
-          </div>
+          {realPhotos.length > 0 ? (
+            <>
+              <div className="relative rounded-2xl overflow-hidden border border-[#EAE6DF] h-64 bg-[#FAF8F5] flex items-center justify-center">
+                <img
+                  src={realPhotos[selectedPhotoIndex]}
+                  alt="صورة المقهى"
+                  className="w-full h-full object-cover transition-all duration-300"
+                />
+                {/* Left arrow */}
+                {realPhotos.length > 1 && (
+                  <button
+                    onClick={() => setSelectedPhotoIndex((prev) => (prev > 0 ? prev - 1 : realPhotos.length - 1))}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#2F2D29] hover:bg-white shadow-sm transition-all cursor-pointer"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                )}
+                {/* Right arrow */}
+                {realPhotos.length > 1 && (
+                  <button
+                    onClick={() => setSelectedPhotoIndex((prev) => (prev < realPhotos.length - 1 ? prev + 1 : 0))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-xs flex items-center justify-center text-[#2F2D29] hover:bg-white shadow-sm transition-all cursor-pointer"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+              {realPhotos.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 pt-3">
+                  {realPhotos.map((_, i) => (
+                    <span
+                      key={i}
+                      onClick={() => setSelectedPhotoIndex(i)}
+                      className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
+                        selectedPhotoIndex === i ? "bg-[#BA9B65] w-4" : "bg-[#E5E0D8]"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-full bg-[#FAF8F5] border border-[#EAE6DF] flex items-center justify-center text-[#BA9B65] mb-2">
+                <ImageIcon size={24} />
+              </div>
+              <p className="text-xs font-bold text-[#8A7A5C]">لا توجد صور لهذا المقهى</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Reject Confirmation Dialog */}
+      <ConfirmDialog
+        open={rejectConfirmOpen}
+        onOpenChange={setRejectConfirmOpen}
+        title="تأكيد رفض المقهى"
+        description={`هل أنت متأكد من رغبتك في رفض مقهى "${cafe.name}"؟`}
+        confirmText="رفض المقهى"
+        cancelText="إلغاء"
+        variant="destructive"
+        onConfirm={handleConfirmReject}
+        isLoading={rejectCafe.isPending}
+      />
     </div>
   );
 }

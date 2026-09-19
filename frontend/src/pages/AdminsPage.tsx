@@ -27,6 +27,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAdmins, useCreateAdmin, useUpdateAdmin } from "@/hooks/useAdmins";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const AVAILABLE_PAGES = [
   { id: "Dashboard", label: "لوحة التحكم" },
@@ -134,12 +136,25 @@ export default function AdminsPage() {
 
   const handleSubmit = (values: CreateAdminFormData) => {
     if (editingAdmin) {
+      const { email, ...updatePayload } = values;
       updateAdmin.mutate(
-        { id: editingAdmin.id, data: values },
+        { id: editingAdmin.id, data: updatePayload },
         {
           onSuccess: () => {
             handleDialogClose();
             queryClient.invalidateQueries({ queryKey: ["admins"] });
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+            toast({
+              title: "تم بنجاح",
+              description: "تم تحديث بيانات المسؤول بنجاح",
+            });
+          },
+          onError: (err: any) => {
+            toast({
+              title: "خطأ",
+              description: err?.response?.data?.message || "فشل تحديث بيانات المسؤول",
+              variant: "destructive",
+            });
           },
         }
       );
@@ -150,11 +165,24 @@ export default function AdminsPage() {
           onSuccess: () => {
             handleDialogClose();
             queryClient.invalidateQueries({ queryKey: ["admins"] });
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+            toast({
+              title: "تم بنجاح",
+              description: "تمت إضافة المسؤول بنجاح",
+            });
+          },
+          onError: (err: any) => {
+            toast({
+              title: "خطأ",
+              description: err?.response?.data?.message || "فشل إضافة المسؤول",
+              variant: "destructive",
+            });
           },
         }
       );
     }
   };
+
 
   const togglePage = (pageId: string) => {
     const current = watchedPages;
@@ -348,15 +376,25 @@ export default function AdminsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-[#2F2D29]">البريد الالكتروني</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-[#2F2D29]">البريد الالكتروني</Label>
+                {isEditing && (
+                  <span className="text-[10px] text-[#8A7A5C] font-semibold">غير قابل للتعديل</span>
+                )}
+              </div>
               <Input
                 type="email"
                 dir="ltr"
                 {...form.register("email")}
-                className="h-11 rounded-xl border-[#E5E0D8] bg-white text-sm text-right"
+                disabled={isEditing}
+                className={cn(
+                  "h-11 rounded-xl border-[#E5E0D8] bg-white text-sm text-right",
+                  isEditing && "bg-[#FAF8F5] text-gray-500 cursor-not-allowed border-[#EAE6DF]"
+                )}
                 required
               />
             </div>
+
 
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-[#2F2D29]">رقم الجوال</Label>

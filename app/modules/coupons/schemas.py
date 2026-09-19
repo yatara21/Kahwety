@@ -1,13 +1,13 @@
-from pydantic import ConfigDict, BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, computed_field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class CouponBase(BaseModel):
     code: str = Field(..., min_length=1, max_length=50)
     discount_percent: int = Field(..., ge=1, le=100)
     plan_id: Optional[str] = None
-    max_uses: int = Field(..., ge=0)
+    max_uses: int = Field(default=0, ge=0)
     start_date: datetime
     end_date: datetime
     is_active: bool = True
@@ -34,6 +34,17 @@ class CouponResponse(CouponBase):
     updated_at: datetime
     plan: Optional["SubscriptionPlanResponse"] = None
     model_config = ConfigDict(from_attributes=True)
+
+    @computed_field
+    @property
+    def status(self) -> str:
+        if not self.is_active:
+            return "TERMINATED"
+        now = datetime.now(timezone.utc)
+        end = self.end_date if self.end_date.tzinfo else self.end_date.replace(tzinfo=timezone.utc)
+        if end < now:
+            return "EXPIRED"
+        return "ACTIVE"
 
 
 class SubscriptionPlanResponse(BaseModel):

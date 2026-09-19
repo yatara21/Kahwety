@@ -52,6 +52,7 @@ class DashboardService:
         cafe_subscribers = await self._count_active_by_subscriber_type(SubscriberType.CAFE_OWNER)
         pending_complaints_count = await self._count_complaints_by_status(ComplaintStatus.PENDING)
         resolved_complaints_count = await self._count_complaints_by_status(ComplaintStatus.RESOLVED)
+        open_complaints_count = await self._count_open_complaints()
         suggested_cafes_count = await self._count_suggested_cafes()
         subscription_revenue = await self._get_subscription_revenue()
 
@@ -74,6 +75,7 @@ class DashboardService:
             cafe_subscribers=cafe_subscribers,
             pending_complaints=pending_complaints_count,
             resolved_complaints=resolved_complaints_count,
+            open_complaints=open_complaints_count,
             suggested_cafes=suggested_cafes_count,
             subscription_revenue=subscription_revenue,
         )
@@ -185,6 +187,15 @@ class DashboardService:
     async def _count_complaints(self) -> int:
         result = await self.session.execute(select(func.count()).select_from(Complaint))
         return result.scalar() or 0
+
+    async def _count_open_complaints(self) -> int:
+        result = await self.session.execute(
+            select(func.count()).select_from(
+                select(Complaint).where(Complaint.status != ComplaintStatus.RESOLVED).subquery()
+            )
+        )
+        return result.scalar() or 0
+
 
     async def _count_subscriptions(self) -> int:
         result = await self.session.execute(select(func.count()).select_from(Subscription))

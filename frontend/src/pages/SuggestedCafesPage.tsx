@@ -33,7 +33,10 @@ import {
   useApproveSuggestedCafe,
   useRejectSuggestedCafe,
 } from "@/hooks/useSuggestedCafes";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { toast } from "@/hooks/use-toast";
 import type { SuggestedCafe } from "@/types";
+
 
 export default function SuggestedCafesPage() {
   const navigate = useNavigate();
@@ -61,9 +64,12 @@ export default function SuggestedCafesPage() {
   const items = data?.items ?? [];
   const totalPages = data?.total_pages ?? 1;
 
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["suggested-cafes"] });
     queryClient.invalidateQueries({ queryKey: ["suggested-cafe"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
   const handleApprove = () => {
@@ -72,29 +78,57 @@ export default function SuggestedCafesPage() {
       onSuccess: () => {
         refresh();
         setSelectedCafe(null);
+        toast({
+          title: "تم بنجاح",
+          description: `تم قبول مقترح مقهى "${selectedCafe.owner_name}" بنجاح`,
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل قبول المقترح",
+          variant: "destructive",
+        });
       },
     });
   };
 
-  const handleReject = () => {
+  const handleConfirmReject = () => {
     if (!selectedCafe) return;
     reject.mutate(selectedCafe.id, {
       onSuccess: () => {
         refresh();
+        setRejectConfirmOpen(false);
         setSelectedCafe(null);
+        toast({
+          title: "تم بنجاح",
+          description: `تم رفض مقترح مقهى "${selectedCafe.owner_name}" بنجاح`,
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل رفض المقترح",
+          variant: "destructive",
+        });
+        setRejectConfirmOpen(false);
       },
     });
   };
 
   const renderStatus = (status: string) => {
-    if (status === "APPROVED" || status === "SENT") {
-      return <span className="text-xs font-bold text-[#0E9F6E]">تمت المراسلة</span>;
+    if (status === "APPROVED") {
+      return <span className="text-xs font-bold text-[#0E9F6E]">تم القبول</span>;
+    }
+    if (status === "SENT") {
+      return <span className="text-xs font-bold text-[#007AFF]">تمت المراسلة</span>;
     }
     if (status === "REJECTED") {
-      return <span className="text-xs font-bold text-[#3F83F8]">تم الأطلاع</span>;
+      return <span className="text-xs font-bold text-[#C93B2B]">مرفوض</span>;
     }
     return <span className="text-xs font-bold text-[#D97706]">جديد</span>;
   };
+
 
   const workingHours = [
     { day: "السبت", hours: "07:30 – 17:30" },
@@ -455,7 +489,7 @@ export default function SuggestedCafesPage() {
                       {approve.isPending ? "جاري القبول..." : "قبول"}
                     </button>
                     <button
-                      onClick={handleReject}
+                      onClick={() => setRejectConfirmOpen(true)}
                       disabled={reject.isPending}
                       className="px-5 py-2 rounded-xl bg-[#C93B2B] hover:bg-[#A82E20] text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
                     >
@@ -465,60 +499,69 @@ export default function SuggestedCafesPage() {
                 </div>
               </div>
 
-              {/* 3 Bottom Cards matching Figma */}
+              {/* 3 Real Data Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-                {/* Products */}
-                <div className="bg-white rounded-2xl p-4 border border-[#EAE6DF] shadow-xs flex flex-col">
-                  <h4 className="text-base font-bold text-[#2F2D29] mb-3 text-center">منتجات المقهى</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {cafeProducts.slice(0, 9).map((p, idx) => (
-                      <div
-                        key={idx}
-                        className="flex flex-col items-center justify-center p-2 rounded-xl border border-[#E5E0D8] bg-white aspect-square text-center"
-                      >
-                        <div className="mb-1">{p.icon}</div>
-                        <span className="text-[9px] font-bold text-[#2F2D29] line-clamp-1">{p.name}</span>
-                      </div>
-                    ))}
+                {/* Social & Contact Links */}
+                <div className="bg-white rounded-2xl p-4 border border-[#EAE6DF] shadow-xs flex flex-col justify-between">
+                  <h4 className="text-base font-bold text-[#2F2D29] mb-3 text-center">وسائل التواصل</h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[#8A7A5C] font-semibold">الموقع الإلكتروني</span>
+                      {selectedCafe.website ? (
+                        <a href={selectedCafe.website} target="_blank" rel="noreferrer" className="text-[#BA9B65] font-bold underline truncate max-w-[150px]">
+                          {selectedCafe.website}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">غير متوفر</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[#8A7A5C] font-semibold">إنستغرام</span>
+                      {selectedCafe.instagram ? (
+                        <span className="text-[#2F2D29] font-bold truncate max-w-[150px]">{selectedCafe.instagram}</span>
+                      ) : (
+                        <span className="text-gray-400">غير متوفر</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-[#FAF8F5]">
+                      <span className="text-[#8A7A5C] font-semibold">فيسبوك</span>
+                      {selectedCafe.facebook ? (
+                        <span className="text-[#2F2D29] font-bold truncate max-w-[150px]">{selectedCafe.facebook}</span>
+                      ) : (
+                        <span className="text-gray-400">غير متوفر</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Working Hours */}
+                {/* Location Information */}
                 <div className="bg-white rounded-2xl p-4 border border-[#EAE6DF] shadow-xs flex flex-col justify-between">
-                  <h4 className="text-base font-bold text-[#2F2D29] mb-3 text-center">مواعيد المقهى</h4>
-                  <div className="divide-y divide-[#F0ECE4] text-xs font-bold">
-                    {workingHours.map((wh) => (
-                      <div key={wh.day} className="py-2 flex items-center justify-between">
-                        <span className="text-[#2F2D29]">{wh.day}</span>
-                        <span className={wh.isClosed ? "text-[#C93B2B]" : "text-[#7A746B]"}>
-                          {wh.hours}
-                        </span>
-                      </div>
-                    ))}
+                  <h4 className="text-base font-bold text-[#2F2D29] mb-3 text-center">بيانات الموقع</h4>
+                  <div className="space-y-3 text-xs p-3 bg-[#FAF8F5] rounded-xl flex-1 flex flex-col justify-center">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8A7A5C] font-semibold">المدينة:</span>
+                      <span className="text-[#2F2D29] font-bold text-sm">{selectedCafe.city}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8A7A5C] font-semibold">رابط خرائط جوجل:</span>
+                      {selectedCafe.google_link ? (
+                        <a href={selectedCafe.google_link} target="_blank" rel="noreferrer" className="text-[#BA9B65] font-bold underline">
+                          فتح الخريطة
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">غير متوفر</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Photo Carousel */}
+                {/* Notes */}
                 <div className="bg-white rounded-2xl p-4 border border-[#EAE6DF] shadow-xs flex flex-col justify-between">
-                  <h4 className="text-base font-bold text-[#2F2D29] mb-3 text-center">صور المقهى</h4>
-                  <div className="relative rounded-xl overflow-hidden border border-[#EAE6DF] h-48 bg-[#F5F0E8] flex items-center justify-center">
-                    <img
-                      src={samplePhotos[photoIndex]}
-                      alt="صورة المقهى"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => setPhotoIndex((prev) => (prev > 0 ? prev - 1 : samplePhotos.length - 1))}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center text-[#2F2D29]"
-                    >
-                      <ChevronLeft size={14} />
-                    </button>
-                    <button
-                      onClick={() => setPhotoIndex((prev) => (prev < samplePhotos.length - 1 ? prev + 1 : 0))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 flex items-center justify-center text-[#2F2D29]"
-                    >
-                      <ChevronRight size={14} />
-                    </button>
+                  <h4 className="text-base font-bold text-[#2F2D29] mb-3 text-center">ملاحظات الاقتراح</h4>
+                  <div className="p-3 bg-[#FAF8F5] rounded-xl flex-1 flex items-center justify-center text-center">
+                    <p className="text-xs text-[#524E48] leading-relaxed">
+                      {selectedCafe.admin_notes || "لا توجد ملاحظات إضافية مسجلة لهذا المقترح."}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -526,6 +569,19 @@ export default function SuggestedCafesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog for Reject */}
+      <ConfirmDialog
+        open={rejectConfirmOpen}
+        onOpenChange={setRejectConfirmOpen}
+        title="تأكيد رفض المقترح"
+        description={`هل أنت متأكد من رغبتك في رفض مقترح مقهى "${selectedCafe?.owner_name}"؟ سيتم تحديث حالة الطلب إلى مرفوض.`}
+        confirmText="رفض المقترح"
+        cancelText="إلغاء"
+        variant="destructive"
+        onConfirm={handleConfirmReject}
+        isLoading={reject.isPending}
+      />
     </div>
   );
 }

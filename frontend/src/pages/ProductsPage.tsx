@@ -9,11 +9,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Eye,
+  ImageIcon,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +25,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   useProducts,
@@ -34,6 +35,7 @@ import {
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { uploadApi } from "@/api/upload";
 import { getImageUrl } from "@/utils/imageUrl";
+import { toast } from "@/hooks/use-toast";
 
 const productSchema = z.object({
   name: z.string().min(1, "اسم المنتج بالعربية مطلوب"),
@@ -50,6 +52,7 @@ export default function ProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -73,13 +76,22 @@ export default function ProductsPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setUploadingImage(true);
     try {
       const response = await uploadApi.upload(file);
       setImageUrl(response.url);
+      toast({
+        title: "تم بنجاح",
+        description: "تم رفع صورة المنتج بنجاح",
+      });
     } catch (error) {
       console.error("Upload failed", error);
+      toast({
+        title: "خطأ",
+        description: "فشل رفع الصورة",
+        variant: "destructive",
+      });
     } finally {
       setUploadingImage(false);
     }
@@ -124,6 +136,18 @@ export default function ProductsPage() {
         onSuccess: () => {
           handleDialogClose();
           queryClient.invalidateQueries({ queryKey: ["products"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({
+            title: "تم بنجاح",
+            description: "تم تعديل المنتج بنجاح",
+          });
+        },
+        onError: (err: any) => {
+          toast({
+            title: "خطأ",
+            description: err?.response?.data?.message || "فشل تعديل المنتج",
+            variant: "destructive",
+          });
         },
       });
     } else {
@@ -131,6 +155,18 @@ export default function ProductsPage() {
         onSuccess: () => {
           handleDialogClose();
           queryClient.invalidateQueries({ queryKey: ["products"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          toast({
+            title: "تم بنجاح",
+            description: "تمت إضافة المنتج بنجاح",
+          });
+        },
+        onError: (err: any) => {
+          toast({
+            title: "خطأ",
+            description: err?.response?.data?.message || "فشل إضافة المنتج",
+            variant: "destructive",
+          });
         },
       });
     }
@@ -142,6 +178,18 @@ export default function ProductsPage() {
       onSuccess: () => {
         setDeleteTarget(null);
         queryClient.invalidateQueries({ queryKey: ["products"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        toast({
+          title: "تم بنجاح",
+          description: "تم حذف المنتج بنجاح",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          title: "خطأ",
+          description: err?.response?.data?.message || "فشل حذف المنتج",
+          variant: "destructive",
+        });
       },
     });
   };
@@ -150,18 +198,18 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6 pb-12 font-sans" dir="rtl" style={{ fontFamily: "Almarai, sans-serif" }}>
-      {/* Top Header: Title + Add Product Button matching Products.png */}
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2F2D29]">المنتجات والخدمات</h1>
         <button
           onClick={openCreateDialog}
-          className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95"
+          className="px-6 py-2.5 bg-[#BA9B65] hover:bg-[#A07C28] text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
         >
           + منتج جديد
         </button>
       </div>
 
-      {/* Table matching Products.png from Figma */}
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-[#EAE6DF] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse">
@@ -171,7 +219,7 @@ export default function ProductsPage() {
                 <th className="py-4 px-6 text-center">اسم المنتج باللغة العربية</th>
                 <th className="py-4 px-6 text-center">اسم المنتج باللغة الانجليزية</th>
                 <th className="py-4 px-6 text-center">الصورة</th>
-                <th className="py-4 px-6 text-center">حذف</th>
+                <th className="py-4 px-6 text-center">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0ECE4]">
@@ -204,21 +252,33 @@ export default function ProductsPage() {
                       {product.name_en || "Espresso"}
                     </td>
                     <td className="py-4 px-6 text-center">
-                      <span className="text-xs font-bold text-[#007AFF] hover:underline cursor-pointer">
-                        {product.image_url || "Espresso.png"}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPreviewImage({
+                            url: product.image_url ? getImageUrl(product.image_url) : "/resources/Asset 50 1.png",
+                            title: product.name,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#007AFF] hover:underline cursor-pointer px-2.5 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+                      >
+                        <ImageIcon size={14} />
+                        <span>{product.image_url ? "معاينة الصورة" : "لا توجد صورة"}</span>
+                      </button>
                     </td>
                     <td className="py-4 px-6 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => openEditDialog(product)}
-                          className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-[#BA9B65] text-[#8A7A5C] hover:text-[#BA9B65] flex items-center justify-center transition-colors shadow-xs"
+                          title="تعديل المنتج"
+                          className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-[#BA9B65] text-[#8A7A5C] hover:text-[#BA9B65] flex items-center justify-center transition-colors shadow-xs cursor-pointer"
                         >
                           <Pencil size={15} />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(product)}
-                          className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-red-500 text-[#8A7A5C] hover:text-red-600 flex items-center justify-center transition-colors shadow-xs"
+                          title="حذف المنتج"
+                          className="w-8 h-8 rounded-lg border border-[#E5E0D8] bg-white hover:border-red-500 text-[#8A7A5C] hover:text-red-600 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
                         >
                           <Trash2 size={15} />
                         </button>
@@ -231,7 +291,7 @@ export default function ProductsPage() {
           </table>
         </div>
 
-        {/* Pagination matching Figma */}
+        {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-[#F0ECE4] text-xs font-bold text-[#2F2D29]">
           <div className="flex items-center gap-2">
             <span className="text-[#8A7A5C]">الصفحة/</span>
@@ -256,7 +316,7 @@ export default function ProductsPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5] cursor-pointer"
             >
               <ChevronRight size={14} />
             </button>
@@ -268,7 +328,7 @@ export default function ProductsPage() {
                 <button
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-colors cursor-pointer ${
                     isSelected
                       ? "border border-[#BA9B65] text-[#BA9B65] bg-white shadow-xs"
                       : "border border-[#E5E0D8] text-[#2F2D29] hover:bg-[#FAF8F5]"
@@ -282,13 +342,51 @@ export default function ProductsPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5]"
+              className="w-8 h-8 rounded-lg border border-[#E5E0D8] flex items-center justify-center text-[#2F2D29] disabled:opacity-40 hover:bg-[#FAF8F5] cursor-pointer"
             >
               <ChevronLeft size={14} />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Product Image Preview Modal */}
+      <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
+        <DialogContent className="sm:max-w-md bg-white rounded-3xl p-6 border border-[#EAE6DF] shadow-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-extrabold text-[#2F2D29] text-right mb-2">
+              صورة المنتج: {previewImage?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-4 bg-[#FAF8F5] rounded-2xl border border-[#EAE6DF] min-h-[220px]">
+            {previewImage?.url ? (
+              <img
+                src={previewImage.url}
+                alt={previewImage.title}
+                className="max-h-80 w-auto max-w-full rounded-xl object-contain shadow-xs"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/resources/Asset 50 1.png";
+                }}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <ImageIcon className="w-12 h-12 text-[#BA9B65]/40 mx-auto mb-2" />
+                <p className="text-xs font-bold text-[#8A7A5C]">لا توجد صورة مسجلة لهذا المنتج</p>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPreviewImage(null)}
+              className="border-[#E5E0D8] text-[#2F2D29] font-bold rounded-xl px-6 cursor-pointer"
+            >
+              إغلاق
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add / Edit Product Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleDialogClose()}>
